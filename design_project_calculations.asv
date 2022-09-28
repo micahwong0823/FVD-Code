@@ -1041,7 +1041,7 @@ for iterate = 1:iterate_limit
         disp('Not worth using electric at this recharge rate')
         break
     end
-    P_ICE_to_fly = P_cruise - P_available_elec - P_recharge/n_e;
+    P_ICE_to_fly = P_cruise - P_available_elec/n_e - P_recharge/n_e;
     if P_available < P_cruise
         disp('Unable to cruise at this altitude')
         break
@@ -1056,13 +1056,13 @@ for iterate = 1:iterate_limit
     if recharging_set_1 == true
         E_battery_1 = E_battery_1 + P_recharge/no_batteries/2*dt_cruise;
         E_battery_2 = E_battery_2 + P_recharge/no_batteries/2*dt_cruise;
-        E_battery_3 = E_battery_3 - P_elec_cruise/n_e*dt_cruise;
-        E_battery_4 = E_battery_4 - P_elec_cruise/n_e*dt_cruise;
+        E_battery_3 = E_battery_3 - P_elec_cruise*dt_cruise;
+        E_battery_4 = E_battery_4 - P_elec_cruise*dt_cruise;
     elseif recharging_set_2 == true
         E_battery_3 = E_battery_3 + P_recharge/no_batteries/2*dt_cruise;
         E_battery_4 = E_battery_4 + P_recharge/no_batteries/2*dt_cruise;
-        E_battery_1 = E_battery_1 - P_elec_cruise/n_e*dt_cruise;
-        E_battery_2 = E_battery_2 - P_elec_cruise/n_e*dt_cruise;
+        E_battery_1 = E_battery_1 - P_elec_cruise*dt_cruise;
+        E_battery_2 = E_battery_2 - P_elec_cruise*dt_cruise;
     end
 
     if E_battery_1 >= percent_to_recharge*E_battery_1_chosen && E_battery_2 >= percent_to_recharge*E_battery_2_chosen
