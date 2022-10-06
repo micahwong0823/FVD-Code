@@ -110,7 +110,7 @@ n_pr = 0.85
 CD0 = 0.02 % Torenbeek
 
 % Reduction to cp
-HEP_cp_reduction = 0.3 % If hybrid parallel
+HEP_cp_reduction = 0 % If hybrid parallel
 % HEP_cp_reduction = 0 % If fuel only
 
 k_land = 1.3
@@ -137,6 +137,18 @@ R_h = R_h*1.852*1000 %m
 % Cruise speed required
 V_cruise_req = 300 %KTAS
 V_cruise_req = V_cruise_req/1.94384
+
+% Getting a more accurate estimate of the weight
+M_payload_max = 6720 %kg
+W_payload_max = M_payload_max*g
+
+% Motor efficiency
+n_e = 0.95
+
+% Analytical curve for sigma
+syms h
+T = -6.5*10^-3*h + 288.16 %K
+sigma = (T/288.16)^(-g/(-6.5*10^-3*287)-1)
 
 %% Constraint Analysis
 % Mission profile
@@ -168,10 +180,7 @@ constraint_plot.Position = figure_position
 cp_cruise_constraint = cp_cruise
 cp_loiter_constraint = cp_loiter
 
-% Analytical curve for sigma
-syms h
-T = -6.5*10^-3*h + 288.16 %K
-sigma = (T/288.16)^(-g/(-6.5*10^-3*287)-1)
+
 
 %Hybridization
 P0_elec_P0_constraint = 0.1
@@ -397,13 +406,7 @@ W4_W0_aim_constraint = W1_W0_constraint*W2_W1_constraint*W3_W2_aim_constraint*W4
 % Mass of fuel
 Wf_W0_aim_harmonic = (1+fuel_reserve)*(1-W4_W0_aim_constraint)
 
-% Getting a more accurate estimate of the weight
-M_payload_max = 6720 %kg
-W_payload_max = M_payload_max*g
 
-
-% Motor efficiency
-n_e = 0.95
 W_batteries_W0_aim = P0_elec_P0_constraint*1/(n_e*battery_PO*1000)*P0_W0_aim*g
 
 iterate = 10
@@ -426,6 +429,7 @@ Me_aim = We_aim/g
 % ICE Engine
 
 % For Rolls Royce AE2100A (for hybrid)
+P0_M_ICE = P0_ICE_pw_chosen/M_ICE_chosen;
 % Power of individual ICE
 P0_ICE_pw_chosen = 3096 %kW
 % P0_ICE_pw_chosen = 10000
@@ -451,15 +455,15 @@ P0_ICE_chosen = no_ICE_pw*2*P0_ICE_pw_chosen*1000 % W
 
 % Electric motor
 
-% For Pipistrel (for hybrid)
-% Power of individual motor
-P0_elec_pw_chosen = 57.6% kW % Pipistrel
-% RPM of motor
-RPM_elec_chosen = 2500 % RPM
-% Mass of motor
-M_motor_chosen = 22.7 %kg
-% Number of motor per wing
-no_motor_pw = 6
+% % For Pipistrel (for hybrid)
+% % Power of individual motor
+% P0_elec_pw_chosen = 57.6% kW % Pipistrel
+% % RPM of motor
+% RPM_elec_chosen = 2500 % RPM
+% % Mass of motor
+% M_motor_chosen = 22.7 %kg
+% % Number of motor per wing
+% no_motor_pw = 6
 
 % % No electric motor
 % % Power of individual motor
@@ -472,15 +476,15 @@ no_motor_pw = 6
 % no_motor_pw = 6
 
 % Total electrical power
-P0_elec_chosen = no_motor_pw*2*P0_elec_pw_chosen*1000 % W
+% P0_elec_chosen = no_motor_pw*2*P0_elec_pw_chosen*1000 % W
 
-P0_chosen = P0_ICE_chosen + P0_elec_chosen
+P0_chosen = P0_ICE_chosen
 
-P0_elec_P0_chosen = P0_elec_chosen/P0_chosen
-P0_ICE_P0_chosen = P0_ICE_chosen/P0_chosen
+% P0_elec_P0_chosen = P0_elec_chosen/P0_chosen
+% P0_ICE_P0_chosen = P0_ICE_chosen/P0_chosen
 
 % RPM chosen (take the lower of the two)
-RPM_chosen = min([RPM_ICE_chosen,RPM_elec_chosen]) % RPM
+RPM_chosen = RPM_ICE_chosen % RPM
 
 % For a given percentage usage of the electric motor, aim for the below
 % parameters
@@ -492,23 +496,23 @@ RPM_chosen = min([RPM_ICE_chosen,RPM_elec_chosen]) % RPM
 % P0_elec_aim_per_wing = P0_elec_aim/2
 
 % Battery mass (and other parameters)
-M_batteries_chosen = 1419 %kg
-W_batteries_chosen = M_batteries_chosen*g
-battery_capacity = 0.333 % kWh/kg
-battery_capacity = battery_capacity*1000*3600 %J/kg
+% M_batteries_chosen = 1419 %kg
+% W_batteries_chosen = M_batteries_chosen*g
+% battery_capacity = 0.333 % kWh/kg
+% battery_capacity = battery_capacity*1000*3600 %J/kg
 
 % PO = power output
-battery_max_PO = 1.33*10^3 % W/kg
-battery_recharge_rate = 1.66*10^3 % W/kg
+% battery_max_PO = 1.33*10^3 % W/kg
+% battery_recharge_rate = 1.66*10^3 % W/kg
 
 % Energy capacity
-no_batteries = 4;
-E_total_battery_chosen = M_batteries_chosen*battery_capacity
-E_per_battery_chosen = E_total_battery_chosen/no_batteries;
-E_battery_1_chosen = E_per_battery_chosen;
-E_battery_2_chosen = E_per_battery_chosen;
-E_battery_3_chosen = E_per_battery_chosen;
-E_battery_4_chosen = E_per_battery_chosen;
+% no_batteries = 4;
+% E_total_battery_chosen = M_batteries_chosen*battery_capacity
+% E_per_battery_chosen = E_total_battery_chosen/no_batteries;
+% E_battery_1_chosen = E_per_battery_chosen;
+% E_battery_2_chosen = E_per_battery_chosen;
+% E_battery_3_chosen = E_per_battery_chosen;
+% E_battery_4_chosen = E_per_battery_chosen;
 
 
 
@@ -653,10 +657,10 @@ C_Y_delta_r_cruise = 0.095
 
 
 % Harmonic
-% W0_chosen = W0_MTOW_chosen
-% M0_chosen = M0_MTOW_chosen
-% % Total fuel weight
-% Wf_chosen = W0_chosen - We_chosen - W_batteries_chosen - W_payload_max
+W0_chosen = W0_MTOW_chosen
+M0_chosen = M0_MTOW_chosen
+% Total fuel weight
+Wf_chosen = W0_chosen - We_chosen - W_payload_max
 
 
 % Maximum range
@@ -666,10 +670,10 @@ C_Y_delta_r_cruise = 0.095
 % Wf_chosen = Wf_chosen_max
 
 % Ultimate range
-W0_chosen = We_chosen + Wf_chosen_max + W_batteries_chosen;
-M0_chosen = Me_chosen + Mf_chosen_max + M_batteries_chosen;
+% W0_chosen = We_chosen + Wf_chosen_max + W_batteries_chosen;
+% M0_chosen = Me_chosen + Mf_chosen_max + M_batteries_chosen;
 % Total fuel weight
-Wf_chosen = Wf_chosen_max
+% Wf_chosen = Wf_chosen_max
 
 Wf_reserve = fuel_reserve*Wf_chosen
 Wf_available = Wf_chosen - Wf_reserve
@@ -681,18 +685,18 @@ h_cruise_chosen = 16000*0.3048
 W = W0_chosen
 M = M0_chosen
 % Instantaneous Battery energy
-E_total_battery = E_total_battery_chosen
-E_battery_1 = E_battery_1_chosen
-E_battery_2 = E_battery_2_chosen
-E_battery_3 = E_battery_3_chosen
-E_battery_4 = E_battery_4_chosen
+% E_total_battery = E_total_battery_chosen
+% E_battery_1 = E_battery_1_chosen
+% E_battery_2 = E_battery_2_chosen
+% E_battery_3 = E_battery_3_chosen
+% E_battery_4 = E_battery_4_chosen
 
 
 % Take off
 % Power is at max
 P_ICE_to = P0_ICE_chosen;
-P_elec_to = P0_elec_chosen;
-P_to = P_ICE_to + P_elec_to;
+% P_elec_to = P0_elec_chosen;
+P_to = P_ICE_to;
 % For ground roll (follows Set 6 slides (Toby))
 k_lof_chosen = 1.1
 % CL0_to = 0.1 % From Qunyh's CL-AoA graph
@@ -741,9 +745,9 @@ for iterate = 1:iterate_limit
     s_to_g = s_to_g + V*dt_to;
     time_to_g = time_to_g + dt_to;
     W = W-fuel_mass_flow_rate_to*g*dt_to;
-    E_total_battery = E_total_battery - P_elec_to*dt_to/n_e;
-    E_battery_1 = E_battery_1 - P_elec_to*dt_to/n_e/2;
-    E_battery_2 = E_battery_2 - P_elec_to*dt_to/n_e/2;
+%     E_total_battery = E_total_battery - P_elec_to*dt_to/n_e;
+%     E_battery_1 = E_battery_1 - P_elec_to*dt_to/n_e/2;
+%     E_battery_2 = E_battery_2 - P_elec_to*dt_to/n_e/2;
     M = W/g;
 
     if V > V_lof_chosen % Break if velocity exceeds lift off velocity
@@ -759,16 +763,16 @@ W_end_to_g = W
 M_end_to_g = M
 V_end_to_g = V
 
-E_total_battery_end_to_g = E_total_battery
-E_battery_1_end_to_g = E_battery_1
-E_battery_2_end_to_g = E_battery_2
-E_battery_3_end_to_g = E_battery_3
-E_battery_4_end_to_g = E_battery_4
+% E_total_battery_end_to_g = E_total_battery
+% E_battery_1_end_to_g = E_battery_1
+% E_battery_2_end_to_g = E_battery_2
+% E_battery_3_end_to_g = E_battery_3
+% E_battery_4_end_to_g = E_battery_4
 
 Wf_used_to_g = W0_chosen - W_end_to_g
 Mf_used_to_g = Wf_used_to_g/g
 
-E_battery_used_to_g = E_total_battery_chosen - E_total_battery;
+% E_battery_used_to_g = E_total_battery_chosen - E_total_battery;
 
 
 % For air distance (Set 6 slides (Toby))
@@ -832,9 +836,9 @@ for pitch_iterate = 1:pitch_iterate_limit % Loop to see if pitch is correct
         h_to_air = h_to_air + Vv*dt_to;
         W = W-fuel_mass_flow_rate_to*g*dt_to;
         M = W/g;
-        E_total_battery = E_total_battery - P_elec_to*dt_to/n_e;
-        E_battery_1 = E_battery_1 - P_elec_to/2*dt_to/n_e/2;
-        E_battery_2 = E_battery_2 - P_elec_to/2*dt_to/n_e/2;
+%         E_total_battery = E_total_battery - P_elec_to*dt_to/n_e;
+%         E_battery_1 = E_battery_1 - P_elec_to/2*dt_to/n_e/2;
+%         E_battery_2 = E_battery_2 - P_elec_to/2*dt_to/n_e/2;
         s_to_air= s_to_air+V*cos(gamma)*dt_to;
         time_to_air = time_to_air + dt_to;
         pitch = AoA + gamma - iw_chosen;
@@ -864,16 +868,16 @@ V_stall_to_air = mean(V_stall_to_air_array)
 W_end_to_air = W
 M_end_to_air = M
 
-E_total_battery_end_to_air = E_total_battery
-E_battery_1_end_to_air = E_battery_1
-E_battery_2_end_to_air = E_battery_2
-E_battery_3_end_to_air = E_battery_3
-E_battery_4_end_to_air = E_battery_4
+% E_total_battery_end_to_air = E_total_battery
+% E_battery_1_end_to_air = E_battery_1
+% E_battery_2_end_to_air = E_battery_2
+% E_battery_3_end_to_air = E_battery_3
+% E_battery_4_end_to_air = E_battery_4
 
 Wf_used_to_air = W_end_to_g - W_end_to_air
 Mf_used_to_air = Wf_used_to_air/g
 
-E_battery_used_to_air = E_total_battery_end_to_g - E_total_battery
+% E_battery_used_to_air = E_total_battery_end_to_g - E_total_battery
 W1_calculated = W_end_to_air
 M1_calculated = M_end_to_air
 
@@ -1031,9 +1035,9 @@ for iBlock = 1:no_blocks % Looping over different segments of climb
         s_climb = s_climb + V*cos(gamma_block_recalc);
         fuel_mass_flow_rate_climb = alpha_climb_block*P0_ICE_chosen*cp_climb_chosen;
         W = W - fuel_mass_flow_rate_climb*g*dt_climb;
-        E_total_battery = E_total_battery - P_elec_climb*dt_climb/n_e;
-        E_battery_1 = E_battery_1 - P_elec_climb/2*dt_climb/n_e/2;
-        E_battery_2 = E_battery_2 - P_elec_climb/2*dt_climb/n_e/2;
+%         E_total_battery = E_total_battery - P_elec_climb*dt_climb/n_e;
+%         E_battery_1 = E_battery_1 - P_elec_climb/2*dt_climb/n_e/2;
+%         E_battery_2 = E_battery_2 - P_elec_climb/2*dt_climb/n_e/2;
     end
     V_stall_climb(iBlock) = mean(V_stall_block);
 end
@@ -1070,13 +1074,13 @@ M2_calculated = W_end_climb/g
 Wf_used_climb = W1_calculated - W2_calculated
 Mf_used_climb = Wf_used_climb/g
 
-E_total_battery_end_climb = E_total_battery;
-E_battery_1_end_climb = E_battery_1
-E_battery_2_end_climb = E_battery_2
-E_battery_3_end_climb = E_battery_3
-E_battery_4_end_climb = E_battery_4
+% E_total_battery_end_climb = E_total_battery;
+% E_battery_1_end_climb = E_battery_1
+% E_battery_2_end_climb = E_battery_2
+% E_battery_3_end_climb = E_battery_3
+% E_battery_4_end_climb = E_battery_4
 
-E_battery_used_climb =  E_total_battery_end_to_air - E_total_battery
+% E_battery_used_climb =  E_total_battery_end_to_air - E_total_battery
 
 
 %% Detailed performance calculations (Cruise)
@@ -1090,27 +1094,27 @@ CL_alpha_cruise = 5.723
 CL0_cruise = 0.34-CL_alpha_cruise*iw_chosen; % Updated value
 
 % Percentage levels of the two batteries at the start of cruise
-E_total_battery_start_cruise = E_total_battery_end_climb;
-E_battery_1_start_cruise = E_battery_1_end_climb;
-E_battery_2_start_cruise = E_battery_2_end_climb;
-E_battery_1_start_cruise_percentage = E_battery_1_start_cruise/E_battery_1_chosen;
-E_battery_2_start_cruise_percentage = E_battery_2_start_cruise/E_battery_2_chosen;
+% E_total_battery_start_cruise = E_total_battery_end_climb;
+% E_battery_1_start_cruise = E_battery_1_end_climb;
+% E_battery_2_start_cruise = E_battery_2_end_climb;
+% E_battery_1_start_cruise_percentage = E_battery_1_start_cruise/E_battery_1_chosen;
+% E_battery_2_start_cruise_percentage = E_battery_2_start_cruise/E_battery_2_chosen;
 
-E_total_battery = E_total_battery_start_cruise;
-E_battery_1 = E_battery_1_start_cruise;
-E_battery_2 = E_battery_2_start_cruise;
-E_battery_3 = E_battery_3_chosen;
-E_battery_4 = E_battery_4_chosen;
+% E_total_battery = E_total_battery_start_cruise;
+% E_battery_1 = E_battery_1_start_cruise;
+% E_battery_2 = E_battery_2_start_cruise;
+% E_battery_3 = E_battery_3_chosen;
+% E_battery_4 = E_battery_4_chosen;
 
 % Power available
 P_available_ICE = P0_ICE_chosen*alpha_cruise_chosen
 % P_available_elec = 0.02*P0_ICE_chosen
 % Power available coming out of the motors
-P_available_elec = 167*2*1000
+% P_available_elec = 167*2*1000
 % Power recharing going into the battery
-P_recharge = 148*2*1000 % W
+% P_recharge = 148*2*1000 % W
 % Total power available
-P_available = P_available_ICE + P_available_elec - P_recharge/n_e;
+P_available = P_available_ICE
 
 iterate_limit = 10000000
 s_cruise = 0;
@@ -1123,7 +1127,7 @@ plot_power_chart = true;
 if plot_power_chart == true
     alpha_cruise_chart = 0.7*sigma^0.8;
     P_available_ICE_chart = P0_ICE_chosen*alpha_cruise_chart;
-    P_available_chart = P_available_ICE_chart + P_available_elec - P_recharge/n_e;
+    P_available_chart = P_available_ICE_chart;
     rho_chart = rho_SL*sigma;
     % Basic
     %     CL_chart = W/(1/2*rho_chart*V_cruise_chosen^2*S_chosen);
@@ -1149,12 +1153,12 @@ if plot_power_chart == true
     legend('Power available','Power required')
 end
 
-% Recharging states (set 1 is battery 1 and 2 and set 2 is battery 3 and 4)
-recharging_set_1 = true;
-recharging_set_2 = false;
+% % Recharging states (set 1 is battery 1 and 2 and set 2 is battery 3 and 4)
+% recharging_set_1 = true;
+% recharging_set_2 = false;
 
-% Percent to stop recharging
-percent_to_recharge = 1;
+% % Percent to stop recharging
+% percent_to_recharge = 1;
 
 % Percentage of fuel available to burn
 fuel_available_burn_percent = 0.95;
@@ -1182,61 +1186,59 @@ for iterate = 1:iterate_limit
     T = D/(cos(AoA_cruise-iw_chosen));
     P_cruise = T*V_cruise_chosen/n_pr_cruise_chosen;
 
-
-    % Electrical power at cruise
-    P_elec_cruise = P_available_elec;
-    if P_elec_cruise < P_recharge
-        disp('Not worth using electric at this recharge rate')
-        break
-    end
-    % Power from combustion engine to fly
-    if P_available < P_cruise
-        disp('Unable to cruise at this altitude')
-        break
-    end
-
-    if E_battery_1 > 0 || E_battery_2 > 0 || E_battery_3 > 0 || E_battery_4 > 0
-        % Recharge cycle
-        if recharging_set_1 == true
-            E_battery_1 = E_battery_1 + P_recharge/no_batteries*2*dt_cruise;
-            E_battery_2 = E_battery_2 + P_recharge/no_batteries*2*dt_cruise;
-            E_battery_3 = E_battery_3 - P_elec_cruise/2/n_e*dt_cruise;
-            E_battery_4 = E_battery_4 - P_elec_cruise/2/n_e*dt_cruise;
-            E_total_battery = E_battery_1 + E_battery_2 + E_battery_3 + E_battery_4;
-        elseif recharging_set_2 == true
-            E_battery_3 = E_battery_3 + P_recharge/no_batteries*2*dt_cruise;
-            E_battery_4 = E_battery_4 + P_recharge/no_batteries*2*dt_cruise;
-            E_battery_1 = E_battery_1 - P_elec_cruise/2/n_e*dt_cruise;
-            E_battery_2 = E_battery_2 - P_elec_cruise/2/n_e*dt_cruise;
-            E_total_battery = E_battery_1 + E_battery_2 + E_battery_3 + E_battery_4;
-        end
-    
-        % Recharge cycle switching condition
-        if (E_battery_1 >= percent_to_recharge*E_battery_1_chosen & E_battery_2 >= percent_to_recharge*E_battery_2_chosen) | (E_battery_3 < 0 & E_battery_4 < 0)
-            recharging_set_2 = true;
-            recharging_set_1 = false;
-            time_finished_recharging_set_1(switch_iterate_set_1) = time_cruise;
-    
-            switch_iterate_set_1 = switch_iterate_set_1 + 1;
-        elseif (E_battery_3 >= percent_to_recharge*E_battery_3_chosen & E_battery_4 >= percent_to_recharge*E_battery_4_chosen) | (E_battery_1 < 0 & E_battery_2 < 0)
-            recharging_set_2 = false;
-            recharging_set_1 = true;
-            time_finished_recharging_set_2(switch_iterate_set_2) = time_cruise;
-            switch_iterate_set_2 = switch_iterate_set_2 + 1;
-        end
-        P_ICE_to_fly = P_cruise - P_available_elec;
-        fuel_mass_flow_rate_cruise = cp_cruise_chosen*(P_ICE_to_fly + P_recharge/n_e);
-
-    else
-        P_available = P_available_ICE;
-        P_ICE_to_fly = P_available_ICE;
-        fuel_mass_flow_rate_cruise = cp_cruise_chosen*(P_ICE_to_fly);
-
-    end
-
+% 
+%     % Electrical power at cruise
+%     P_elec_cruise = P_available_elec;
+%     if P_elec_cruise < P_recharge
+%         disp('Not worth using electric at this recharge rate')
+%         break
+%     end
+%     % Power from combustion engine to fly
+%     if P_available < P_cruise
+%         disp('Unable to cruise at this altitude')
+%         break
+%     end
+% 
+%     if E_battery_1 > 0 || E_battery_2 > 0 || E_battery_3 > 0 || E_battery_4 > 0
+%         % Recharge cycle
+%         if recharging_set_1 == true
+%             E_battery_1 = E_battery_1 + P_recharge/no_batteries*2*dt_cruise;
+%             E_battery_2 = E_battery_2 + P_recharge/no_batteries*2*dt_cruise;
+%             E_battery_3 = E_battery_3 - P_elec_cruise/2/n_e*dt_cruise;
+%             E_battery_4 = E_battery_4 - P_elec_cruise/2/n_e*dt_cruise;
+%             E_total_battery = E_battery_1 + E_battery_2 + E_battery_3 + E_battery_4;
+%         elseif recharging_set_2 == true
+%             E_battery_3 = E_battery_3 + P_recharge/no_batteries*2*dt_cruise;
+%             E_battery_4 = E_battery_4 + P_recharge/no_batteries*2*dt_cruise;
+%             E_battery_1 = E_battery_1 - P_elec_cruise/2/n_e*dt_cruise;
+%             E_battery_2 = E_battery_2 - P_elec_cruise/2/n_e*dt_cruise;
+%             E_total_battery = E_battery_1 + E_battery_2 + E_battery_3 + E_battery_4
+%         end
+%     
+%         % Recharge cycle switching condition
+%         if (E_battery_1 >= percent_to_recharge*E_battery_1_chosen & E_battery_2 >= percent_to_recharge*E_battery_2_chosen) | (E_battery_3 < 0 & E_battery_4 < 0)
+%             recharging_set_2 = true;
+%             recharging_set_1 = false;
+%             time_finished_recharging_set_1(switch_iterate_set_1) = time_cruise;
+%     
+%             switch_iterate_set_1 = switch_iterate_set_1 + 1;
+%         elseif (E_battery_3 >= percent_to_recharge*E_battery_3_chosen & E_battery_4 >= percent_to_recharge*E_battery_4_chosen) | (E_battery_1 < 0 & E_battery_2 < 0)
+%             recharging_set_2 = false;
+%             recharging_set_1 = true;
+%             time_finished_recharging_set_2(switch_iterate_set_2) = time_cruise;
+%             switch_iterate_set_2 = switch_iterate_set_2 + 1;
+%         end
+%         P_ICE_to_fly = P_cruise - P_available_elec;
+%     else
+%         P_available = P_available_ICE;
+%         P_ICE_to_fly = P_available_ICE;
+%     end
+P_available = P_available_ICE;
+P_ICE_to_fly = P_available_ICE;
     % Excess power for optimization (decreases throughout cruise as W
     % decreases)
     P_excess(iterate) = P_available - P_cruise;
+    fuel_mass_flow_rate_cruise = cp_cruise_chosen*(P_ICE_to_fly);
     W = W-fuel_mass_flow_rate_cruise*dt_cruise*g;
 
     s_cruise = s_cruise + dt_cruise*V_cruise_chosen;
@@ -1265,19 +1267,19 @@ M3_calculated = W3_calculated/g;
 Wf_used_cruise = W2_calculated - W3_calculated;
 Mf_used_cruise = Wf_used_cruise/g;
 
-disp('At end of flight:')
-disp(num2str(E_battery_1/E_battery_1_chosen*100,'Battery 1 has %.2f percent left'))
-disp(num2str(E_battery_2/E_battery_2_chosen*100,'Battery 2 has %.2f percent left'))
-disp(num2str(E_battery_3/E_battery_3_chosen*100,'Battery 3 has %.2f percent left'))
-disp(num2str(E_battery_4/E_battery_4_chosen*100,'Battery 4 has %.2f percent left'))
-disp(num2str(P_excess(1)/1000,'Initial excess power at this condition is %.2f kW'))
+% disp('At end of flight:')
+% disp(num2str(E_battery_1/E_battery_1_chosen*100,'Battery 1 has %.2f percent left'))
+% disp(num2str(E_battery_2/E_battery_2_chosen*100,'Battery 2 has %.2f percent left'))
+% disp(num2str(E_battery_3/E_battery_3_chosen*100,'Battery 3 has %.2f percent left'))
+% disp(num2str(E_battery_4/E_battery_4_chosen*100,'Battery 4 has %.2f percent left'))
+% disp(num2str(P_excess(1)/1000,'Initial excess power at this condition is %.2f kW'))
 
 
-E_total_battery_end_cruise = E_total_battery;
-E_battery_1_end_cruise = E_battery_1
-E_battery_2_end_cruise = E_battery_2
-E_battery_3_end_cruise = E_battery_3
-E_battery_4_end_cruise = E_battery_4
+% E_total_battery_end_cruise = E_total_battery;
+% E_battery_1_end_cruise = E_battery_1
+% E_battery_2_end_cruise = E_battery_2
+% E_battery_3_end_cruise = E_battery_3
+% E_battery_4_end_cruise = E_battery_4
 
 %% Detailed performance calculations (Descent, Approach and Landing)
 % Descent
@@ -1297,11 +1299,11 @@ t_descent = 0
 dt_descent = 1
 iterate_limit = 3600/dt_descent
 
-E_total_battery_start_descent = E_total_battery_end_cruise;
-E_battery_1_start_descent = E_battery_1_end_cruise;
-E_battery_2_start_descent = E_battery_2_end_cruise;
-E_battery_3_start_descent = E_battery_3_end_cruise;
-E_battery_4_start_descent = E_battery_4_end_cruise;
+% E_total_battery_start_descent = E_total_battery_end_cruise;
+% E_battery_1_start_descent = E_battery_1_end_cruise;
+% E_battery_2_start_descent = E_battery_2_end_cruise;
+% E_battery_3_start_descent = E_battery_3_end_cruise;
+% E_battery_4_start_descent = E_battery_4_end_cruise;
 
 syms AoA_descent_sym P_descent_sym
 
@@ -1327,20 +1329,21 @@ for iterate = 1:iterate_limit
     P = double(solutions.P_descent_sym);
     AoA_descent = double(solutions.AoA_descent_sym);
     pitch_descent = gamma_descent + AoA_descent;
-    if E_battery_1 > 0 || E_battery_2 > 0 || E_battery_3 > 0 || E_battery_4 > 0
-        fuel_mass_flow_rate_descent = cp_descent_chosen*(P-P_elec_descent);
-        if E_battery_1 > E_battery_3
-            E_battery_1 = E_battery_1 - P_elec_descent/2/n_e*dt_descent;
-            E_battery_2 = E_battery_2 - P_elec_descent/2/n_e*dt_descent;
-            E_total_battery = E_battery_1 + E_battery_2 + E_battery_3 + E_battery_4;
-        elseif E_battery_3 > E_battery_1
-            E_battery_3 = E_battery_3 - P_elec_descent/2/n_e*dt_descent;
-            E_battery_4 = E_battery_4 - P_elec_descent/2/n_e*dt_descent;
-            E_total_battery = E_battery_1 + E_battery_2 + E_battery_3 + E_battery_4;
-        end
-    else
-        fuel_mass_flow_rate_descent = cp_descent_chosen*P;
-    end
+%     if E_battery_1 > 0 || E_battery_2 > 0 || E_battery_3 > 0 || E_battery_4 > 0
+%         fuel_mass_flow_rate_descent = cp_descent_chosen*(P-P_elec_descent);
+%         if E_battery_1 > E_battery_3
+%             E_battery_1 = E_battery_1 - P_elec_descent/2/n_e*dt_descent;
+%             E_battery_2 = E_battery_2 - P_elec_descent/2/n_e*dt_descent;
+%             E_total_battery = E_battery_1 + E_battery_2 + E_battery_3 + E_battery_4;
+%         elseif E_battery_3 > E_battery_1
+%             E_battery_3 = E_battery_3 - P_elec_descent/2/n_e*dt_descent;
+%             E_battery_4 = E_battery_4 - P_elec_descent/2/n_e*dt_descent;
+%             E_total_battery = E_battery_1 + E_battery_2 + E_battery_3 + E_battery_4;
+%         end
+%     else
+%         fuel_mass_flow_rate_descent = cp_descent_chosen*P;
+%     end
+    fuel_mass_flow_rate_descent = cp_descent_chosen*P;
     W = W - fuel_mass_flow_rate_descent*g*dt_descent;
     t_descent = t_descent + dt_descent;
     h_descent = h_descent- dt_descent*Vv_descent;
@@ -1412,11 +1415,11 @@ s_land = s_land_g + s_land_air
 s_total = s_to_calculated + s_climb + s_cruise + s_descent + s_land
 s_total = s_total/1000/1.852
 
-E_total_battery_end_descent = E_total_battery;
-E_battery_1_end_descent = E_battery_1;
-E_battery_2_end_descent = E_battery_2;
-E_battery_3_end_descent = E_battery_3;
-E_battery_4_end_descent = E_battery_4;
+% E_total_battery_end_descent = E_total_battery;
+% E_battery_1_end_descent = E_battery_1;
+% E_battery_2_end_descent = E_battery_2;
+% E_battery_3_end_descent = E_battery_3;
+% E_battery_4_end_descent = E_battery_4;
 
 
 %% Service ceiling calculations
