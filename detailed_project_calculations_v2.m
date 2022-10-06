@@ -106,7 +106,7 @@ end
 % 3 - End of cruise/start of desecent
 % 4 - End of descent and have landed
 
-    % Figure formatting
+% Figure formatting
 set(0,'DefaultLineLineWidth',1,...+2
     'DefaultLineMarkerSize',10,...
     'DefaultAxesFontSize',16,...
@@ -165,7 +165,7 @@ T = -6.5*10^-3*h + 288.16 %K
 sigma = (T/288.16)^(-g/(-6.5*10^-3*287)-1)
 
 %Hybridization
-P0_elec_P0_constraint = 0.1 
+P0_elec_P0_constraint = 0.1
 P0_ICE_P0_constraint = 1-P0_elec_P0_constraint
 
 % Initial parameters
@@ -211,8 +211,8 @@ n_pr_to_constraint = n_pr
 n_pr_landing_constraint = n_pr
 
 
-% Landing approach speed 
-% Assume approaching at Vapp = 1.3*V_stall 
+% Landing approach speed
+% Assume approaching at Vapp = 1.3*V_stall
 % Also assume landing at SL
 % Assume beta_land = 1
 k_land_constraint = 1.3
@@ -450,7 +450,7 @@ P0_ICE_chosen = no_ICE_pw*2*P0_ICE_pw_chosen*1000 % W
 
 % For Pipistrel (for hybrid)
 % Power of individual motor
-P0_elec_pw_chosen = 57.6% kW % Pipistrel 
+P0_elec_pw_chosen = 57.6% kW % Pipistrel
 % RPM of motor
 RPM_elec_chosen = 2500 % RPM
 % Mass of motor
@@ -460,7 +460,7 @@ no_motor_pw = 6
 
 % % No electric motor
 % % Power of individual motor
-% P0_elec_pw_chosen = 0% kW % Pipistrel 
+% P0_elec_pw_chosen = 0% kW % Pipistrel
 % % RPM of motor
 % RPM_elec_chosen = 2500 % RPM
 % % Mass of motor
@@ -535,6 +535,9 @@ A_aim = 11.5
 S_chosen = 74
 b_aim = (S_chosen*A_aim)^(1/2)
 b_chosen = 28.531
+% Wing incidence angle
+iw_chosen = 2.25
+iw_chosen = iw_chosen*pi/180
 
 % Propeller sizing (need to ensure V_helical < 240)
 % For four propellers
@@ -548,9 +551,14 @@ V_helical = ((pi*RPM_chosen/60*D_p_aim)^2+V_cruise_req^2)^(1/2)
 D_p_chosen = 3.1 %m
 V_helical_chosen = ((pi*RPM_chosen/60*D_p_chosen)^2+V_cruise_req^2)^(1/2)
 
+S_blade = 15.84 % Total area of the blades
+
 % Fuselage length
 l_fuselage_aim = 0.169*M0_MTOW_chosen^0.51 %m (Correlations for twin turboprops by Raymer)
 l_fuselage_chosen = 27
+
+d_fuselage_chosen = 2.7;
+
 % Tail moment arms
 
 % Horizontal tail
@@ -564,11 +572,11 @@ L_VT_aim = L_HT_aim % Assuming vertical tail length is the same as horizontal
 % Geometric mean chord
 c_gm_aim = S_chosen/b_aim
 
-% Wing MAC 
+% Wing MAC
 c_mac_w_aim = c_gm_aim % Assume it is close to geometric chord
 
 % Correlations for horizontal and vertical tail by Raymer
-c_HT = 0.9 
+c_HT = 0.9
 c_VT = 0.08
 
 % Horizontal tail surface area
@@ -606,10 +614,35 @@ n_pr_cruise_chosen = n_pr
 n_pr_descent_chosen = n_pr
 n_pr_landing_chosen = n_pr
 
-CL_max_clean_chosen = 1.65
-CL_max_climb_chosen = 1.65
-CL_max_to_chosen = 1.95
-CL_max_land_chosen = 2.3
+% Wing data
+CL_max_clean = 1.022;
+CL_max_LE_flap = 1.572;
+CL_max_TE_flap = 2.114;
+CL_max_both = 2.258;
+
+dCL_LE_rectangular_flap = 0.0393;
+dCL_TE_rectangular_flap = 0.3893;
+dCL_LE_taper_flap = 0.1464;
+
+% From Raymer
+% CL_max_clean_chosen = 1.65
+% CL_max_climb_chosen = 1.65
+% CL_max_to_chosen = 1.95
+% CL_max_land_chosen = 2.3
+
+% From wing data
+CL_max_clean_chosen = CL_max_clean;
+CL_max_climb_chosen = CL_max_clean;
+CL_max_to_chosen = CL_max_both;
+CL_max_land_chosen = CL_max_both;
+
+% Control surfaces
+delta_r_max_deflection = 20 %deg
+delta_r_max_deflection = delta_r_max_deflection*pi/180
+% Yawing coefficients
+C_Y_beta_cruise = 0.146
+C_Y_delta_r_cruise = 0.095
+
 %% Performance calculations (Deprecated section. No need to check over this. Move onto detailed performance calculations)
 
 % Harmonic Range (Take off at MPL and MTOW)
@@ -675,8 +708,8 @@ R_max_chosen = R_max_chosen/1000/1.852
 % TOFL
 TOP_chosen = P0_W0_chosen^-1*W0_S_chosen*1/sigma_to*1/CL_max_to
 TOFL_chosen = 11.8*TOP_chosen + 0.255*TOP_chosen^2
-   
-    
+
+
 
 % Service ceiling
 sigma_climb_chosen = sigma
@@ -724,7 +757,13 @@ P_elec_to = P0_elec_chosen;
 P_to = P_ICE_to + P_elec_to;
 % For ground roll (follows Set 6 slides (Toby))
 k_lof_chosen = 1.1
-CL0_to = 0.1 % From Qunyh's CL-AoA graph
+% CL0_to = 0.1 % From Qunyh's CL-AoA graph
+% CL_alpha_to = 5.53859 % From slope Quynh sent
+% CL_alpha_to = 4.895 % Updated value
+CL_alpha_to = 5.723
+CL0_to = dCL_LE_rectangular_flap + dCL_LE_taper_flap + dCL_TE_rectangular_flap +0.34-CL_alpha_to*iw_chosen; % Updated value
+
+
 V_lof_chosen = k_lof_chosen*(2*W0_chosen/(rho_SL*CL_max_to_chosen*S_chosen))^(1/2)
 % Friction coefficient
 % u_to = 0.05 % For hard ground
@@ -736,6 +775,8 @@ h_wing_chosen = 2.7 %m % Height of wing above the ground
 K_IGE_to = 16*(h_wing_chosen/b_chosen)^2/(1+16*(h_wing_chosen/b_chosen)^2)*K_to_chosen; % Adjusting K for ground effect
 fuel_mass_flow_rate_to = cp_to_chosen*P_ICE_to;
 
+AoA_to_g = iw_chosen
+
 V = 0;
 s_to_g =  0;
 dt_to = 0.01
@@ -745,7 +786,19 @@ time_to_g = 0;
 % For the calculated static thrust, time step through the ground roll TO
 for iterate = 1:iterate_limit
     V_stall_to_g_array(iterate) =  (2*W/S_chosen/(rho_SL*CL_max_to_chosen))^(1/2); % Just getting the V_stall, doesnt effect other variables
-    V = V + (T_static-1/2*rho_SL*V^2*S_chosen*(CD0_to_chosen+K_IGE_to*CL_to_g^2)-u_to*(W-1/2*rho_SL*V^2*S_chosen*CL_to_g))/M*dt_to;
+    % Basic analysis
+    %     V = V + (T_static-1/2*rho_SL*V^2*S_chosen*(CD0_to_chosen+K_IGE_to*CL_to_g^2)-u_to*(W-1/2*rho_SL*V^2*S_chosen*CL_to_g))/M*dt_to;
+
+
+    % Accounting for angle of attack
+    CL = CL_alpha_to*AoA_to_g + CL0_to
+    CD = CD0_to_chosen + K_IGE_to*CL^2;
+    L = 1/2*rho_SL*V^2*S_chosen*CL;
+    D = 1/2*rho_SL*V^2*S_chosen*CD;
+    N  = W-L;
+    Ff = u_to*N;
+    V = V + (T_static-D-Ff)/M*dt_to;
+
     s_to_g = s_to_g + V*dt_to;
     time_to_g = time_to_g + dt_to;
     W = W-fuel_mass_flow_rate_to*g*dt_to;
@@ -753,6 +806,7 @@ for iterate = 1:iterate_limit
     E_battery_1 = E_battery_1 - P_elec_to*dt_to/n_e/2;
     E_battery_2 = E_battery_2 - P_elec_to*dt_to/n_e/2;
     M = W/g;
+
     if V > V_lof_chosen % Break if velocity exceeds lift off velocity
         break
     end
@@ -779,15 +833,17 @@ E_battery_used_to_g = E_total_battery_chosen - E_total_battery;
 
 
 % For air distance (Set 6 slides (Toby))
-CL_alpha_to = 5.53859 % From slope Quynh sent
-pitch = 30 %deg
-pitch = pitch*pi/180 %rad
+% pitch = 30 %deg
+% pitch = pitch*pi/180 %rad
+gamma = 10;
+gamma = gamma*pi/180;
 
 
-k_2_chosen = 1.13
+k_2_chosen = 1.27
 V2_chosen = k_2_chosen*(2*W0_chosen/(rho_SL*CL_max_to_chosen*S_chosen))^(1/2)
 dV_tolerance_air = 0.1;
-pitch_increment = 0.2;
+% pitch_increment = 0.2;
+gamma_increment = 0.1;
 h_clearance_chosen = 35*0.3048
 
 pitch_iterate_limit = 1000
@@ -801,28 +857,58 @@ for pitch_iterate = 1:pitch_iterate_limit % Loop to see if pitch is correct
 
     for iterate = 1:iterate_limit % Loop to calculate the performance parameters and see V is around V2
         V_stall_to_air_array(iterate) = (2*W/S_chosen/(rho_SL*CL_max_to_chosen))^(1/2);
-        CL_to_air = W*cos(pitch)/(1/2*rho_SL*V^2*S_chosen)
-        V = V+(T_static-1/2*rho_SL*V^2*S_chosen*(CD0_to_chosen+K_IGE_to*CL_to_air^2)-W*sin(pitch))/M*dt_to;
-        s_to_air= s_to_air+V*cos(pitch)*dt_to;
-%         AoA = (CL_to_air-CL0_to)/(CL_alpha_to);
-%         Vv = V*sin(pitch-AoA);
-        Vv = V*sin(pitch);
+        % Basic analyis
+        %         CL_to_air = W*cos(pitch)/(1/2*rho_SL*V^2*S_chosen)
+        %         V = V+(T_static-1/2*rho_SL*V^2*S_chosen*(CD0_to_chosen+K_IGE_to*CL_to_air^2)-W*sin(pitch))/M*dt_to;
+        %         s_to_air= s_to_air+V*cos(pitch)*dt_to;
+        % %         AoA = (CL_to_air-CL0_to)/(CL_alpha_to);
+        % %         Vv = V*sin(pitch-AoA);
+        %         Vv = V*sin(pitch);
+        %         h_to_air = h_to_air + Vv*dt_to;
+        %         W = W-fuel_mass_flow_rate_to*g*dt_to;
+        %         M = W/g;
+        %         E_total_battery = E_total_battery - P_elec_to*dt_to/n_e;
+        %         E_battery_1 = E_battery_1 - P_elec_to*dt_to/n_e/2;
+        %         E_battery_2 = E_battery_2 - P_elec_to*dt_to/n_e/2;
+        %         time_to_air = time_to_air + dt_to;
+
+        % Accounting for angle of attack
+        % Solving for AoA
+        AoA = 0;
+        AoA_iterate_limit = 100000;
+        for AoA_iterate = 1:AoA_iterate_limit
+            AoA = ((W*cos(gamma)-T_static*sin(AoA-iw_chosen))/(1/2*rho_SL*V^2*S_chosen)-CL0_to)*1/CL_alpha_to;
+        end
+        CL = CL_alpha_to*AoA+CL0_to;
+        CD = CD0 + K_IGE_to*CL^2;
+        D = 1/2*rho_SL*V^2*S_chosen*CD;
+        V = V + (T_static*cos(AoA-iw_chosen)-D-W*sin(gamma))/M*dt_to;
+        Vv = V*sin(gamma);
         h_to_air = h_to_air + Vv*dt_to;
         W = W-fuel_mass_flow_rate_to*g*dt_to;
         M = W/g;
         E_total_battery = E_total_battery - P_elec_to*dt_to/n_e;
         E_battery_1 = E_battery_1 - P_elec_to*dt_to/n_e/2;
         E_battery_2 = E_battery_2 - P_elec_to*dt_to/n_e/2;
+        s_to_air= s_to_air+V*cos(gamma)*dt_to;
         time_to_air = time_to_air + dt_to;
+        pitch = AoA + gamma;
         if h_to_air > h_clearance_chosen
             break
         end
 
     end
+    %     if V < V2_chosen && abs(V-V2_chosen) > dV_tolerance_air
+    %         pitch = pitch - pitch_increment*pi/180;
+    %     elseif V > V2_chosen && abs(V-V2_chosen) > dV_tolerance_air
+    %         pitch = pitch + pitch_increment*pi/180;
+    %     else
+    %         break
+    %     end
     if V < V2_chosen && abs(V-V2_chosen) > dV_tolerance_air
-        pitch = pitch - pitch_increment*pi/180;
+        gamma = gamma - gamma_increment*pi/180;
     elseif V > V2_chosen && abs(V-V2_chosen) > dV_tolerance_air
-        pitch = pitch + pitch_increment*pi/180;
+        gamma = gamma + gamma_increment*pi/180;
     else
         break
     end
@@ -851,8 +937,11 @@ s_total = s_to_g_calculated + s_to_air_calculated
 
 % Climb (using basic climb found in Raymer performance chapter, tried to adapt Toby's notes but it lead to nonsensical results)
 % Finding the best climb rate at different height blocks
-CL0_climb = 0.1
-CL_alpha_climb = 5.53859
+% CL0_climb = 0.1
+% CL_alpha_climb = 5.53859
+CL_alpha_climb = 5.723
+CL0_climb = 0.34-CL_alpha_climb*iw_chosen; % Updated value
+
 % Break up climb into blocks
 no_blocks = 4;
 h_cruise_blocks = linspace(h_clearance_chosen,h_cruise_chosen,no_blocks+1);
@@ -868,44 +957,58 @@ time_climb = 0
 s_climb = 0
 P_elec_climb = P0_elec_chosen;
 gamma_tolerance = 0.001;
+syms gamma_block_sym AoA_block_sym
 for iBlock = 1:no_blocks % Looping over different segments of climb
     % Getting climb rates for a range of velocities
     alpha_climb_block = double(subs(alpha_climb_chosen,h,mean([h_cruise_blocks(iBlock) h_cruise_blocks(iBlock + 1)])));
     sigma_climb_block = double(subs(sigma,h,mean([h_cruise_blocks(iBlock) h_cruise_blocks(iBlock + 1)])));
+    P_ICE_climb = alpha_climb_block*P0_ICE_chosen*0.9;
+    P_climb = P_ICE_climb + P_elec_climb;
     rho = sigma_climb_block*rho_SL;
 
     V_stall = (2*W/S_chosen/(rho*CL_max_climb_chosen))^(1/2);
     V_range = linspace(V_stall,150,100);
+%     V_range = linspace(60,150,100);
 
-    for iV = 1:length(V_range) % Looping over all the velocities
+    for iV = 1:length(V_range) % Looping er all the velocities
         iterate_limit = 1000;
-        gamma_block = 0;
-        for iterate = 1:iterate_limit % Loop to solve for the climb angle (commented out sections was just a slow symbolic way of solve this)
+        %         gamma_block = 0;
+        %         for iterate = 1:iterate_limit % Loop to solve for the climb angle (commented out sections was just a slow symbolic way of solve this)
         % If thrust is in direction of the flight path
-    %         syms gamma_block_sym
-            V = V_range(iV);
-            P_ICE_climb = alpha_climb_block*P0_ICE_chosen;
-            P_climb = P_ICE_climb + P_elec_climb;
-            T = alpha_climb_block*n_pr*P_climb/V;
-%             L = W*cos(gamma_block_sym);
-            L = W*cos(gamma_block);
-            CL = L/(1/2*rho*V^2*S_chosen);
-            D = 1/2*rho*V^2*S_chosen*(CD0_climb_chosen+K_climb_chosen*CL^2);
-    %         eq1 = sin(gamma_block_sym) == (T-D)/W;
-%             assume(gamma_block_sym > 0 & gamma_block_sym < pi/2)
-%             gamma_block = vpasolve(eq1,gamma_block_sym,[0,pi/2]);
-%             gamma_block = double(gamma_block);
-            gamma_block_new = asin((T-D)/W);
-            if abs(gamma_block_new - gamma_block) < gamma_tolerance
-                break
-            end
-            gamma_block = gamma_block_new;
-        end
+        %             V = V_range(iV);
+        %             P_ICE_climb = alpha_climb_block*P0_ICE_chosen;
+        %             P_climb = P_ICE_climb + P_elec_climb;
+        %             T = alpha_climb_block*n_pr*P_climb/V;
+        %             L = W*cos(gamma_block);
+        %             CL = L/(1/2*rho*V^2*S_chosen);
+        %             D = 1/2*rho*V^2*S_chosen*(CD0_climb_chosen+K_climb_chosen*CL^2);
+        %             gamma_block_new = asin((T-D)/W);
+        %             if abs(gamma_block_new - gamma_block) < gamma_tolerance
+        %                 break
+        %             end
+        %             gamma_block = gamma_block_new;
+        %         end
+        % Accounting for AoA
+        V = V_range(iV);
+        CL = CL_alpha_climb*AoA_block_sym + CL0_climb;
+        CD = CD0_climb_chosen + K_climb_chosen*CL^2;
+        L = 1/2*rho*V^2*S_chosen*CL;
+        D = 1/2*rho*V^2*S_chosen*CD;
+        T = n_pr_climb_chosen*P_climb/V;
+        eq1 = 0 == L-W*cos(gamma_block_sym) + T*sin(AoA_block_sym-iw_chosen);
+        eq2 = 0 == T*cos(AoA_block_sym-iw_chosen) - D - W*sin(gamma_block_sym);
+        solutions = vpasolve([eq1,eq2],[gamma_block_sym,AoA_block_sym],[0, 0]);
+        gamma_block = double(solutions.gamma_block_sym);
+        AoA_block= double(solutions.AoA_block_sym);
+
         % Calculating climb rate
-        Vv = V*sin(gamma_block); 
+        Vv = V*sin(gamma_block);
+
         % Storing results in an array
-        AoA_block_array(iV) = (CL-CL0_climb)/CL_alpha_climb;
-        pitch_block_array(iV) = AoA_block_array(iV)+gamma_block;
+%         AoA_block_array(iV) = (CL-CL0_climb)/CL_alpha_climb;
+        AoA_block_array(iV) = AoA_block;
+%         pitch_block_array(iV) = AoA_block_array(iV)+gamma_block;
+        pitch_block_array(iV) = AoA_block + gamma_block;
         gamma_block_array(iV) = gamma_block;
         Vv_block_array(iV) = Vv;
     end
@@ -913,45 +1016,66 @@ for iBlock = 1:no_blocks % Looping over different segments of climb
     % parameters with it
     [Vv_best_block, best_index] = max(Vv_block_array,[],'all') ;
     V_best(iBlock) = V_range(best_index);
+    % If the best velocity is at stall speed then bump it up by 20%
+    if V_best(iBlock) < 1.2*V_stall
+        V_best(iBlock) = 1.2*V_best(iBlock);
+        [temp_min, best_index] = min(abs(V_best(iBlock)-V_range),[],'all');
+    end
     AoA_best(iBlock) = AoA_block_array(best_index);
     pitch_best(iBlock) = pitch_block_array(best_index);
     gamma_best(iBlock) = gamma_block_array(best_index);
-%     L_D_best(iBlock) = L_D_block_array(best_index);
-    
+    %     L_D_best(iBlock) = L_D_block_array(best_index);
+
     % Climbing at that best speed associated with the best climb rate over the segment
     height_discretization = linspace(h_cruise_blocks(iBlock), h_cruise_blocks(iBlock+1),100); % Finer height discretization
+    height_climb_array = [];
     dh = height_discretization(2) - height_discretization(1);
     V = V_best(iBlock);
     % Calculating the climb rate at the best speed for that given height
-    for iHeight = 1:length(height_discretization) 
+    for iHeight = 1:length(height_discretization)
         alpha_climb_block_recalc = double(subs(alpha_climb_chosen,h,height_discretization(iHeight)));
         sigma_climb_block_recalc = double(subs(sigma,h,height_discretization(iHeight)));
         rho = sigma_climb_block*rho_SL;
         P_ICE_climb = alpha_climb_block_recalc*P0_ICE_chosen;
         P_climb = P_ICE_climb + P_elec_climb;
-        gamma_block_recalc = 0;
-        for iterate = 1:iterate_limit
-            T = alpha_climb_block*n_pr*P_climb/V;
-    %         L = W*cos(gamma_block_sym);
-            L = W*cos(gamma_block_recalc);
-            CL = L/(1/2*rho*V^2*S_chosen);
-            D = 1/2*rho*V^2*S_chosen*(CD0_climb_chosen+K_climb_chosen*CL^2);
-%             eq1 = sin(gamma_block_sym) == (T-D)/W;
+%         gamma_block_recalc = 0;
+%         for iterate = 1:iterate_limit
+%             T = alpha_climb_block*n_pr*P_climb/V;
+%             L = W*cos(gamma_block_recalc);
+%             CL = L/(1/2*rho*V^2*S_chosen);
+%             D = 1/2*rho*V^2*S_chosen*(CD0_climb_chosen+K_climb_chosen*CL^2);
+% 
+%             gamma_block_recalc_new = asin((T-D)/W);
+%             if abs(gamma_block_recalc_new - gamma_block_recalc) < gamma_tolerance
+%                 break
+%             end
+%             gamma_block_recalc = gamma_block_recalc_new;
+%         end
 
-%             assume(gamma_block_sym > 0 & gamma_block_sym < pi/2)
-%             gamma_block_recalc = vpasolve(eq1,gamma_block_sym,[0,pi/2]);
-%             gamma_block_recalc = double(gamma_block_recalc);
-            gamma_block_recalc_new = asin((T-D)/W);
-            if abs(gamma_block_recalc_new - gamma_block_recalc) < gamma_tolerance
-                break
-            end
-            gamma_block_recalc = gamma_block_recalc_new;
-        end
+        % Accounting for AoA
+        height_climb_array = [height_climb_array height_discretization];
+        CL = CL_alpha_climb*AoA_block_sym + CL0_climb;
+        CL_climb_array((iBlock-1)*length(height_discretization) + iHeight) = CL;
+        CD = CD0_climb_chosen + K_climb_chosen*CL^2;
+        L = 1/2*rho*V^2*S_chosen*CL;
+        D = 1/2*rho*V^2*S_chosen*CD;
+        T = n_pr_climb_chosen*P_climb/V;
+        eq1 = 0 == L-W*cos(gamma_block_sym) + T*sin(AoA_block_sym-iw_chosen);
+        eq2 = 0 == T*cos(AoA_block_sym-iw_chosen) - D - W*sin(gamma_block_sym);
+        solutions = vpasolve([eq1,eq2],[gamma_block_sym,AoA_block_sym],[0, 0]);
+        gamma_block_recalc = double(solutions.gamma_block_sym);
+        AoA_block_recalc = double(solutions.AoA_block_sym);
+        CL_num = double(subs(CL,AoA_block_sym,AoA_block_recalc));
+
         Vv = V*sin(gamma_block_recalc);
         % Calculate other climb paramters for this height
-        AoA_block_recalc_array((iBlock-1)*length(height_discretization) + iHeight) = (CL-CL0_climb)/CL_alpha_climb;
-        pitch_block_recalc_array((iBlock-1)*length(height_discretization) + iHeight) = AoA_block_recalc_array((iBlock-1)*length(height_discretization) + iHeight)+gamma_block;
-        gamma_block_recalc_array((iBlock-1)*length(height_discretization) + iHeight) = gamma_block;
+%         AoA_block_recalc_array((iBlock-1)*length(height_discretization) + iHeight) = (CL-CL0_climb)/CL_alpha_climb;
+AoA_block_recalc_array((iBlock-1)*length(height_discretization) + iHeight) = AoA_block_recalc;
+%         pitch_block_recalc_array((iBlock-1)*length(height_discretization) + iHeight) = AoA_block_recalc_array((iBlock-1)*length(height_discretization) + iHeight)+gamma_block;
+pitch_block_recalc_array((iBlock-1)*length(height_discretization) + iHeight) = gamma_block_recalc + AoA_block_recalc;
+%         gamma_block_recalc_array((iBlock-1)*length(height_discretization) + iHeight) = gamma_block;
+        gamma_block_recalc_array((iBlock-1)*length(height_discretization) + iHeight) = gamma_block_recalc;
+
         V_stall_block(iHeight) = (2*W/S_chosen/(rho*CL_max_climb_chosen))^(1/2);
         % Calculate progression of climb
         dt_climb = dh/Vv;
@@ -965,6 +1089,14 @@ for iBlock = 1:no_blocks % Looping over different segments of climb
     end
     V_stall_climb(iBlock) = mean(V_stall_block);
 end
+
+plot_CL_vs_height = true;
+if plot_CL_vs_height == true
+    plot(height_climb_array,CL_)
+end
+plot_angles_vs_height = true;
+
+
 % Setting results after climb
 W_end_climb = W;
 
@@ -990,6 +1122,8 @@ dt_cruise = 0.1
 sigma_cruise_chosen = double(subs(sigma,h,h_cruise_chosen))
 alpha_cruise_chosen = 0.7*sigma_cruise_chosen^0.8
 rho_cruise_chosen = sigma_cruise_chosen*rho_SL
+CL_alpha_cruise = 5.723
+CL0_cruise = 0.34-CL_alpha_cruise*iw_chosen; % Updated value
 
 % Percentage levels of the two batteries at the start of cruise
 E_total_battery_start_cruise = E_total_battery_end_climb;
@@ -1008,9 +1142,9 @@ E_battery_4 = E_battery_4_chosen;
 P_available_ICE = P0_ICE_chosen*alpha_cruise_chosen
 % P_available_elec = 0.02*P0_ICE_chosen
 % Power available coming out of the motors
-P_available_elec = 22000
+P_available_elec = 156*2*1000
 % Power recharing going into the battery
-P_recharge = 20000 % W
+P_recharge = 148*2*1000 % W
 % Total power available
 P_available = P_available_ICE + P_available_elec - P_recharge/n_e;
 
@@ -1027,9 +1161,19 @@ if plot_power_chart == true
     P_available_ICE_chart = P0_ICE_chosen*alpha_cruise_chart;
     P_available_chart = P_available_ICE_chart + P_available_elec - P_recharge/n_e;
     rho_chart = rho_SL*sigma;
-    CL_chart = W/(1/2*rho_chart*V_cruise_chosen^2*S_chosen);
-    T_chart = 1/2*rho_chart*V_cruise_chosen^2*S_chosen*(CD0_cruise_chosen+K_cruise_chosen*CL_chart^2);
+    % Basic
+%     CL_chart = W/(1/2*rho_chart*V_cruise_chosen^2*S_chosen);
+%     T_chart = 1/2*rho_chart*V_cruise_chosen^2*S_chosen*(CD0_cruise_chosen+K_cruise_chosen*CL_chart^2);
+%     P_cruise_chart = T_chart*V_cruise_chosen/n_pr_cruise_chosen;
+
+    L_chart = W;
+    CL_chart = L_chart/(1/2*rho_chart*V_cruise_chosen^2*S_chosen);
+    AoA_cruise = (CL_chart-CL0_cruise)/CL_alpha_cruise;
+    CD_chart = CD0_cruise_chosen + K_cruise_chosen*CL_chart^2;
+    D_chart = 1/2*rho_chart*V_cruise_chosen^2*S_chosen*CD_chart;
+    T_chart = D_chart/(cos(AoA_cruise-iw_chosen));
     P_cruise_chart = T_chart*V_cruise_chosen/n_pr_cruise_chosen;
+
     h_axis = 10:100:25000*0.3048;
     figure
     plot(h_axis/0.3048, double(subs(P_available_chart,h,h_axis)))
@@ -1044,8 +1188,12 @@ end
 % Recharging states (set 1 is battery 1 and 2 and set 2 is battery 3 and 4)
 recharging_set_1 = true;
 recharging_set_2 = false;
+
 % Percent to stop recharging
 percent_to_recharge = 1;
+
+% Percentage of fuel available to burn
+fuel_available_burn_percent = 0.95;
 
 switch_iterate_set_1 = 1;
 switch_iterate_set_2 = 1;
@@ -1055,10 +1203,22 @@ time_finished_recharging_set_2 = [];
 % Timestep through cruise
 for iterate = 1:iterate_limit
     V_stall_cruise_array(iterate) = (2*W/S_chosen/(rho_cruise_chosen*CL_max_clean_chosen))^(1/2);
-    CL = W/(1/2*rho_cruise_chosen*V_cruise_chosen^2*S_chosen);
-    T = 1/2*rho_cruise_chosen*V_cruise_chosen^2*S_chosen*(CD0_cruise_chosen+K_cruise_chosen*CL^2);
-    % Power required
-    P_cruise = T*V_cruise_chosen/n_pr_cruise_chosen;
+    % Basic calcs
+%     CL = W/(1/2*rho_cruise_chosen*V_cruise_chosen^2*S_chosen);
+%     T = 1/2*rho_cruise_chosen*V_cruise_chosen^2*S_chosen*(CD0_cruise_chosen+K_cruise_chosen*CL^2);
+%     % Power required
+%     P_cruise = T*V_cruise_chosen/n_pr_cruise_chosen;
+
+    L = W;
+    CL = L/(1/2*rho_cruise_chosen*V_cruise_chosen^2*S_chosen);
+    AoA_cruise = (CL-CL0_cruise)/CL_alpha_cruise;
+    pitch_cruise = (AoA_cruise-iw_chosen)*180/pi;
+    CD = CD0_cruise_chosen + K_cruise_chosen*CL^2;
+    D = 1/2*rho_cruise_chosen*V_cruise_chosen^2*S_chosen*CD;
+    T = D/(cos(AoA_cruise-iw_chosen));
+    P_cruise = T*V_cruise_chosen/n_pr_cruise_chosen
+
+
     % Electrical power at cruise
     P_elec_cruise = P_available_elec;
     if P_elec_cruise < P_recharge
@@ -1079,39 +1239,40 @@ for iterate = 1:iterate_limit
 
     s_cruise = s_cruise + dt_cruise*V_cruise_chosen;
     time_cruise = time_cruise + dt_cruise;
-    
+
     % Recharge cycle
     if recharging_set_1 == true
-        E_battery_1 = E_battery_1 + P_recharge/no_batteries/2*dt_cruise;
-        E_battery_2 = E_battery_2 + P_recharge/no_batteries/2*dt_cruise;
-        E_battery_3 = E_battery_3 - P_elec_cruise/n_e*dt_cruise;
-        E_battery_4 = E_battery_4 - P_elec_cruise/n_e*dt_cruise;
+        E_battery_1 = E_battery_1 + P_recharge/no_batteries*2*dt_cruise;
+        E_battery_2 = E_battery_2 + P_recharge/no_batteries*2*dt_cruise;
+        E_battery_3 = E_battery_3 - P_elec_cruise/2/n_e*dt_cruise;
+        E_battery_4 = E_battery_4 - P_elec_cruise/2/n_e*dt_cruise;
     elseif recharging_set_2 == true
-        E_battery_3 = E_battery_3 + P_recharge/no_batteries/2*dt_cruise;
-        E_battery_4 = E_battery_4 + P_recharge/no_batteries/2*dt_cruise;
-        E_battery_1 = E_battery_1 - P_elec_cruise/n_e*dt_cruise;
-        E_battery_2 = E_battery_2 - P_elec_cruise/n_e*dt_cruise;
+        E_battery_3 = E_battery_3 + P_recharge/no_batteries*2*dt_cruise;
+        E_battery_4 = E_battery_4 + P_recharge/no_batteries*2*dt_cruise;
+        E_battery_1 = E_battery_1 - P_elec_cruise/2/n_e*dt_cruise;
+        E_battery_2 = E_battery_2 - P_elec_cruise/2/n_e*dt_cruise;
     end
-    
+
     % Recharge cycle switching condition
-    if E_battery_1 >= percent_to_recharge*E_battery_1_chosen && E_battery_2 >= percent_to_recharge*E_battery_2_chosen
+    if (E_battery_1 >= percent_to_recharge*E_battery_1_chosen & E_battery_2 >= percent_to_recharge*E_battery_2_chosen) | (E_battery_3 < 0 & E_battery_4 < 0)
         recharging_set_2 = true;
         recharging_set_1 = false;
         time_finished_recharging_set_1(switch_iterate_set_1) = time_cruise;
+
         switch_iterate_set_1 = switch_iterate_set_1 + 1;
-    elseif E_battery_3 >= percent_to_recharge*E_battery_3_chosen && E_battery_4 >= percent_to_recharge*E_battery_4_chosen
+    elseif (E_battery_3 >= percent_to_recharge*E_battery_3_chosen & E_battery_4 >= percent_to_recharge*E_battery_4_chosen) | (E_battery_1 < 0 & E_battery_2 < 0)
         recharging_set_2 = false;
         recharging_set_1 = true;
         time_finished_recharging_set_2(switch_iterate_set_2) = time_cruise;
         switch_iterate_set_2 = switch_iterate_set_2 + 1;
     end
 
-    if E_battery_1 < 0 || E_battery_2 < 0 || E_battery_3 < 0 || E_battery_4 < 0
+    if E_battery_1 < 0 && E_battery_2 < 0 && E_battery_3 < 0 && E_battery_4 < 0
         disp('Parameters lead to complete depletion of batteries')
         break
     end
 
-    if W < W0_chosen-Wf_available % Stop when we have used all our fuel available
+    if W < W0_chosen-fuel_available_burn_percent*Wf_available % Stop when we have used all our fuel available
         break
     end
 end
@@ -1139,6 +1300,8 @@ disp(num2str(P_excess(1)/1000,'Initial excess power at this condition is %.2f kW
 %% Detailed performance calculations (Descent, Approach and Landing)
 % Descent
 V_descent = V_cruise_chosen
+CL_alpha_descent = 5.723
+CL0_descent = 0.34-CL_alpha_descent*iw_chosen; % Updated value
 gamma_descent = 3
 gamma_descent = gamma_descent*pi/180
 h_land = 50 %ft
@@ -1150,14 +1313,33 @@ s_descent = 0
 t_descent = 0
 dt_descent = 1
 iterate_limit = 3600/dt_descent
+
+syms AoA_descent_sym P_descent_sym
+
 for iterate = 1:iterate_limit
+    % Basic
+%     rho = double(subs(sigma,h,h_descent));
+%     L_descent = W*cos(gamma_descent);
+%     CL_descent = 2*L/(rho*V_descent^2);
+%     CD = CD0_descent_chosen + K_descent_chosen*CL^2;
+%     D = 1/2*rho*V_descent^2*CD;
+%     T = -W*sin(gamma_descent)+D;
+%     P = T*V_descent/n_pr_descent_chosen;
+    
     rho = double(subs(sigma,h,h_descent));
-    L_descent = W*cos(gamma_descent);
-    CL_descent = 2*L/(rho*V_descent^2);
+    CL = CL_alpha_descent*AoA_descent_sym + CL0_descent;
     CD = CD0_descent_chosen + K_descent_chosen*CL^2;
-    D = 1/2*rho*V_descent^2*CD;
-    T = -W*sin(gamma_descent)+D;
-    P = T*V_descent/n_pr_descent_chosen;
+    L = 1/2*rho*V_descent^2*S_chosen*CL;
+    D = 1/2*rho*V_descent^2*S_chosen*CD;
+    T = n_pr_descent_chosen*P_descent_sym/V_descent;
+    eq1 = 0 == L-W*cos(gamma_descent) + T*sin(AoA_descent_sym-iw_chosen);
+    eq2 = 0 == T*cos(AoA_descent_sym-iw_chosen) - D + W*sin(gamma_descent);
+    solutions = vpasolve([eq1,eq2],[P_descent_sym,AoA_descent_sym],[0, 0]);
+    P = double(solutions.P_descent_sym);
+    AoA_descent = double(solutions.AoA_descent_sym);
+    
+    pitch_descent = gamma_descent + AoA_descent;
+
     fuel_mass_flow_rate_descent = cp_descent_chosen*P;
     W = W - fuel_mass_flow_rate_descent*g*dt_descent;
     t_descent = t_descent + dt_descent;
@@ -1184,10 +1366,10 @@ s_land_air = h_land/tan(gamma_approach)
 
 % Ground roll
 s_land_g = 0
-CL0_land = 0.1
-CL = CL0_land
+CL_alpha_land = 5.723
+CL0_land = dCL_LE_rectangular_flap + dCL_LE_taper_flap + dCL_TE_rectangular_flap +0.34-CL_alpha_land*iw_chosen; % Updated value
 k_td = 1.15
-V_td = k_td*V_stall_approach
+V_td = k_td*V_stall_land
 V = V_td
 dt_land_g = 0.01
 iterate_limit = 3600/dt_descent
@@ -1196,13 +1378,27 @@ CD = CD0_landing_chosen+K_IGE_land*CL^2
 u_land = 0.3
 s_land_g = 0
 t_land_g = 0
+AoA_land_g = iw_chosen
+
+
 for iterate = 1:iterate_limit
+    % Basic
+%     L = 1/2*rho_SL*V^2*S_chosen*CL;
+%     D = 1/2*rho_SL*V^2*S_chosen*CD;
+%     N = W-L;
+%     Fr = u_land*N;
+%     M = W/g;
+%     V = V +(-D-Fr)/M*dt_land_g;
+
+    % Accounting for angle of attack
+    CL = CL_alpha_land*AoA_land_g + CL0_land;
+    CD = CD0_to_chosen + K_IGE_land*CL^2;
     L = 1/2*rho_SL*V^2*S_chosen*CL;
     D = 1/2*rho_SL*V^2*S_chosen*CD;
-    N = W-L;
-    Fr = u_land*N;
-    M = W/g;
-    V = V +(-D-Fr)/M*dt_land_g;
+    N  = W-L;
+    Ff = u_land*N;
+    V = V + (-D-Ff)/M*dt_land_g;
+
     s_land_g = s_land_g + V*dt_land_g;
     t_land_g = t_land_g + dt_land_g;
     if V < 0
@@ -1215,7 +1411,7 @@ s_land = s_land_g + s_land_air
 
 
 
-%% Other parameter calculations
+%% Service ceiling calculations
 % Service ceiling
 sigma_SC_chosen = sigma
 alpha_SC_chosen = 0.9*sigma^0.8
@@ -1247,6 +1443,55 @@ assume(h,'real')
 service_ceiling_chosen = double(vpasolve(eq_2,h))
 service_ceiling_chosen = service_ceiling_chosen/0.3048
 
+%% OEI Calculations
+% Sideslip angle calculations
+h_OEI = 0;
+alpha_OEI = double(subs(sigma^0.8,h,h_OEI));
+rho_OEI = double(subs(sigma,h,h_OEI));
+W_OEI = W1_calculated;
+bank_angle_OEI = 5; %deg
+bank_angle_OEI = bank_angle_OEI*pi/180;
+V_stall_OEI = (2*W_OEI/S_chosen/(rho_OEI*CL_max_climb_chosen))^(1/2);
+V_range  = linspace(V_stall_OEI,V_cruise_req,100);
+CD_blade = 0.1;
+
+
+for iV = 1:length(V_range)
+    syms sideslip_sym AoA_sym gamma_sym
+    V = V_range(iV);
+    Fv = 1/2*rho_OEI*V^2*S_chosen*C_Y_beta_cruise*sideslip_sym;
+    Fr = 1/2*rho_OEI*V^2*S_chosen*C_Y_delta_r_cruise*delta_r_max_deflection;
+    CL = CL0_climb + CL_alpha_climb*AoA_sym;
+    L = 1/2*rho_OEI*V^2*S_chosen*CL;
+    dCD0_fuselage = (d_fuselage_chosen*l_fuselage_chosen/S_chosen)*(sin(sideslip_sym))^3;
+    dCD0_prop = (S_blade/S_chosen)*CD_blade;
+    dCD0_OEI = dCD0_fuselage + dCD0_prop;
+    T = alpha_OEI*n_pr*P0_chosen/V/2;
+    eq1 = 0 == Fr*cos(sideslip_sym)*cos(bank_angle_OEI)+Fv*cos(sideslip_sym)*cos(bank_angle_OEI)-L*cos(gamma_sym)*sin(bank_angle_OEI);
+    eq2 = 0 == T*cos(sideslip_sym)*cos(AoA_sym - iw_chosen) - D - W*sin(gamma_sym)-(Fv+Fr)*sin(sideslip_sym)*cos(AoA_sym-iw_chosen);
+    eq3 = 0 == -L*cos(-bank_angle_OEI)-T*cos(sideslip_sym)*sin(AoA_sym-iw_chosen) + W*cos(gamma_sym) + (Fv+Fr)*sin(sideslip_sym)*sin(AoA_sym-iw_chosen);
+    solutions = vpasolve([eq1,eq2,eq3],[sideslip_sym,AoA_sym,gamma_sym]);
+    sideslip_OEI = double(solutions.sideslip_sym);
+    AoA_OEI = double(solutions.AoA_sym);
+    gamma_OEI = double(solutions.gamma_sym);
+    sideslip_OEI_array(iV) = sideslip_OEI;
+    AoA_OEI_array(iV) = AoA_OEI;
+    gamma_OEI_array(iV) = gamma_OEI;
+end
+Vv_OEI_array = V*sin(gamma_OEI_array);
+pitch_OEI_array = AoA_OEI_array + gamma_OEI_array;
+% Plotting
+figure
+yyaxis left
+plot(V_range,sideslip_OEI_array*180/pi);
+hold on
+plot(V_range,pitch_OEI_array*180/pi);
+ylim([0,Inf])
+yyaxis right
+plot(V_range,Vv_OEI_array);
+legend('Sideslip','Pitch','Climb rate')
+
+%% Payload range diagram
 
 
 %% Summarizing results (old code)
