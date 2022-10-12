@@ -429,7 +429,6 @@ Me_aim = We_aim/g
 % ICE Engine
 
 % For Rolls Royce AE2100A (for hybrid)
-P0_M_ICE = P0_ICE_pw_chosen/M_ICE_chosen;
 % Power of individual ICE
 P0_ICE_pw_chosen = 3096 %kW
 % P0_ICE_pw_chosen = 10000
@@ -439,6 +438,9 @@ RPM_ICE_chosen = 1100 % RPM
 M_ICE_chosen = 715.77 %kg
 % Number of ICE per wing
 no_ICE_pw = 1
+
+P0_M_ICE = P0_ICE_pw_chosen/M_ICE_chosen;
+
 
 % % For Rolls Royce AE2100D2 (for fuel only)
 % % Power of individual ICE
@@ -518,7 +520,8 @@ RPM_chosen = RPM_ICE_chosen % RPM
 
 % MTOW
 % M0_MTOW_chosen = 23840
-M0_MTOW_chosen = 22500
+% M0_MTOW_chosen = 22500
+M0_MTOW_chosen = 22000
 W0_MTOW_chosen = M0_MTOW_chosen*g
 
 % OEW
@@ -907,7 +910,7 @@ Vv_tolerance = 0.01
 % Finding the best climb rate in these blocks
 time_climb = 0
 s_climb = 0
-P_elec_climb = P0_elec_chosen;
+% P_elec_climb = P0_elec_chosen;
 gamma_tolerance = 0.001;
 syms gamma_block_sym AoA_block_sym
 for iBlock = 1:no_blocks % Looping over different segments of climb
@@ -915,7 +918,7 @@ for iBlock = 1:no_blocks % Looping over different segments of climb
     alpha_climb_block = double(subs(alpha_climb_chosen,h,mean([h_cruise_blocks(iBlock) h_cruise_blocks(iBlock + 1)])));
     sigma_climb_block = double(subs(sigma,h,mean([h_cruise_blocks(iBlock) h_cruise_blocks(iBlock + 1)])));
     P_ICE_climb = alpha_climb_block*P0_ICE_chosen*0.9;
-    P_climb = P_ICE_climb + P_elec_climb;
+    P_climb = P_ICE_climb;
     rho = sigma_climb_block*rho_SL;
 
     V_stall = (2*W/S_chosen/(rho*CL_max_climb_chosen))^(1/2);
@@ -990,7 +993,7 @@ for iBlock = 1:no_blocks % Looping over different segments of climb
         sigma_climb_block_recalc = double(subs(sigma,h,height_discretization(iHeight)));
         rho = sigma_climb_block*rho_SL;
         P_ICE_climb = alpha_climb_block_recalc*P0_ICE_chosen;
-        P_climb = P_ICE_climb + P_elec_climb;
+        P_climb = P_ICE_climb;
         %         gamma_block_recalc = 0;
         %         for iterate = 1:iterate_limit
         %             T = alpha_climb_block*n_pr*P_climb/V;
@@ -1249,7 +1252,7 @@ P_ICE_to_fly = P_available_ICE;
 %         break
 %     end
 
-    if W < W0_chosen-fuel_available_burn_percent*Wf_available % Stop when we have used all our fuel available
+    if W < W0_chosen-fuel_available_burn_percent*Wf_available || s_cruise > 1.6475e+06 % Stop when we have used all our fuel available
         break
     end
 end
@@ -1272,7 +1275,7 @@ Mf_used_cruise = Wf_used_cruise/g;
 % disp(num2str(E_battery_2/E_battery_2_chosen*100,'Battery 2 has %.2f percent left'))
 % disp(num2str(E_battery_3/E_battery_3_chosen*100,'Battery 3 has %.2f percent left'))
 % disp(num2str(E_battery_4/E_battery_4_chosen*100,'Battery 4 has %.2f percent left'))
-% disp(num2str(P_excess(1)/1000,'Initial excess power at this condition is %.2f kW'))
+disp(num2str(P_excess(1)/1000,'Initial excess power at this condition is %.2f kW'))
 
 
 % E_total_battery_end_cruise = E_total_battery;
@@ -1288,7 +1291,7 @@ CL_alpha_descent = 5.723
 CL0_descent = 0.34-CL_alpha_descent*iw_chosen; % Updated value
 gamma_descent = 3
 gamma_descent = gamma_descent*pi/180
-P_elec_descent = P0_elec_chosen;
+% P_elec_descent = P0_elec_chosen;
 h_land = 50 %ft
 h_land = h_land*0.3048 %m
 W = W3_calculated
@@ -1414,6 +1417,8 @@ s_land = s_land_g + s_land_air
 
 s_total = s_to_calculated + s_climb + s_cruise + s_descent + s_land
 s_total = s_total/1000/1.852
+
+Wf_used = Wf_used_descent + Wf_used_cruise + Wf_used_climb + Wf_used_to_g + Wf_used_to_air
 
 % E_total_battery_end_descent = E_total_battery;
 % E_battery_1_end_descent = E_battery_1;

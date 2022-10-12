@@ -97,6 +97,14 @@ end
 
 
 %% Shared parameters
+% Figure formatting
+set(0,'DefaultLineLineWidth',1,...+2
+    'DefaultLineMarkerSize',10,...
+    'DefaultAxesFontSize',16,...
+    'DefaultTextInterpreter','latex',...
+    'DefaultLegendInterpreter','latex',...
+    'DefaultLegendFontSize',16)
+
 % Shared parameters
 A = 11.5
 
@@ -293,7 +301,7 @@ u = V_cruise_req/V_star_cruise_constraint
 P0_W0_cruise_constraint = beta_cruise_constraint/(n_pr_cruise_constraint*alpha_cruise_constraint*P0_ICE_P0_constraint)*(2/(sigma*rho_SL)*beta_cruise_constraint*W0_S)^(1/2)*2*(CD0_cruise_constraint*K_cruise_constraint^3)^(1/4)*(u^4+1)/(2*u)
 
 % Cruise altitude
-h_cruise_constraint = 22000*0.3048
+h_cruise_constraint = 16000*0.3048
 P0_W0_cruise_opt_constraint = subs(P0_W0_cruise_constraint,h,h_cruise_constraint)
 
 W0_S_cruise_constraint = linspace(lower_W0_S,upper_W0_S,resolution);
@@ -430,7 +438,7 @@ Me_aim = We_aim/g
 % Power of individual ICE
 P0_ICE_pw_chosen = 3096 %kW
 % P0_ICE_pw_chosen = 10000
-% RPM of ICE
+% RPM of ICEd
 RPM_ICE_chosen = 1100 % RPM
 % Mass of ICE
 M_ICE_chosen = 715.77 %kg
@@ -578,6 +586,7 @@ c_gm_aim = S_chosen/b_aim
 
 % Wing MAC
 c_mac_w_aim = c_gm_aim % Assume it is close to geometric chord
+c_mac = 2.714;
 
 % Correlations for horizontal and vertical tail by Raymer
 c_HT = 0.9
@@ -641,12 +650,16 @@ CL_max_to_chosen = CL_max_both;
 CL_max_land_chosen = CL_max_both;
 
 % Control surfaces
-delta_r_max_deflection = 20 %deg
+delta_r_max_deflection = 24 %deg
 delta_r_max_deflection = delta_r_max_deflection*pi/180
 % Yawing coefficients
-C_Y_beta_cruise = 0.146
-C_Y_delta_r_cruise = 0.095
+C_Y_beta_cruise = 0.140
+C_Y_delta_r_cruise = 0.0912
 
+% Additional drag
+dCD_flaps_to = 0.01;
+dCD_flaps_land = 0.01;
+dCD_landing_gear = 0.003;
 
 %% Detailed performance calculations (Takeoff and climb)
 
@@ -680,6 +693,14 @@ Wf_available = Wf_chosen - Wf_reserve
 % Height to cruise at
 h_cruise_chosen = 16000*0.3048
 
+% Trackers
+s_tracker = [];
+t_tracker = [];
+h_tracker = [];
+W_tracker = [];
+E_battery_1_tracker = [];
+E_battery_3_tracker = [];
+
 % W and M is the instantaneous weight
 W = W0_chosen
 M = M0_chosen
@@ -707,15 +728,15 @@ CL0_to = 0.34-CL_alpha_to*iw_chosen; % Updated value
 
 V_lof_chosen = k_lof_chosen*(2*W0_chosen/(rho_SL*CL_max_to_chosen*S_chosen))^(1/2)
 % Friction coefficient
-% u_to = 0.05 % For hard ground
+u_to = 0.1 % For hard ground
 % u_to = 0.1 % For short dry grass
-u_to = 0.3 % For long wet grass
+% u_to = 0.3 % For long wet grass
 % Static thrust
 T_static = n_pr_to_chosen*P_to/V_lof_chosen
 h_wing_chosen = 2.7 %m % Height of wing above the ground
 K_IGE_to = 16*(h_wing_chosen/b_chosen)^2/(1+16*(h_wing_chosen/b_chosen)^2)*K_to_chosen; % Adjusting K for ground effect
 fuel_mass_flow_rate_to = cp_to_chosen*P_ICE_to;
-dCD_flaps_to = 0.01;
+
 AoA_to_g = iw_chosen
 
 V = 0;
@@ -734,12 +755,19 @@ for iterate = 1:iterate_limit
     % Accounting for angle of attack
     CL_clean = CL_alpha_to*AoA_to_g + CL0_to
     CL = CL_clean + dCL_LE_rectangular_flap + dCL_LE_taper_flap + dCL_TE_rectangular_flap
-    CD = CD0_to_chosen + K_IGE_to*CL_clean^2 + dCD_flaps_to;
+    CD = CD0_to_chosen + K_IGE_to*CL_clean^2 + dCD_flaps_to + dCD_landing_gear;
     L = 1/2*rho_SL*V^2*S_chosen*CL;
     D = 1/2*rho_SL*V^2*S_chosen*CD;
     N  = W-L;
     Ff = u_to*N;
     V = V + (T_static-D-Ff)/M*dt_to;
+
+    s_tracker(length(s_tracker)+1) = s_to_g;
+    t_tracker(length(t_tracker)+1) = time_to_g;
+    W_tracker(length(W_tracker)+1) = W;
+    E_battery_1_tracker(length(E_battery_1_tracker)+1) = E_battery_1;
+    E_battery_3_tracker(length(E_battery_3_tracker)+1) = E_battery_3;
+    h_tracker(length(h_tracker)+1) = 0;
 
     s_to_g = s_to_g + V*dt_to;
     time_to_g = time_to_g + dt_to;
@@ -767,6 +795,13 @@ E_battery_1_end_to_g = E_battery_1
 E_battery_2_end_to_g = E_battery_2
 E_battery_3_end_to_g = E_battery_3
 E_battery_4_end_to_g = E_battery_4
+
+s_tracker_end_to_g= s_tracker;
+t_tracker_end_to_g = t_tracker;
+W_tracker_end_to_g = W_tracker;
+E_battery_1_tracker_end_to_g = E_battery_1_tracker;
+E_battery_3_tracker_end_to_g = E_battery_3_tracker;
+h_tracker_end_to_g = h_tracker;
 
 Wf_used_to_g = W0_chosen - W_end_to_g
 Mf_used_to_g = Wf_used_to_g/g
@@ -798,6 +833,14 @@ for pitch_iterate = 1:pitch_iterate_limit % Loop to see if pitch is correct
     M = M_end_to_g;
     V = V_end_to_g;
 
+    s_tracker = s_tracker_end_to_g;
+    t_tracker = t_tracker_end_to_g;
+    W_tracker = W_tracker_end_to_g;
+    E_battery_1_tracker = E_battery_1_tracker_end_to_g;
+    E_battery_3_tracker = E_battery_3_tracker_end_to_g;
+    h_tracker = h_tracker_end_to_g;
+
+
     for iterate = 1:iterate_limit % Loop to calculate the performance parameters and see V is around V2
         V_stall_to_air_array(iterate) = (2*W/S_chosen/(rho_SL*CL_max_to_chosen))^(1/2);
         % Basic analyis
@@ -822,6 +865,7 @@ for pitch_iterate = 1:pitch_iterate_limit % Loop to see if pitch is correct
         for AoA_iterate = 1:AoA_iterate_limit
             AoA_new = ((W*cos(gamma)-T_static*sin(AoA-iw_chosen))/(1/2*rho_SL*V^2*S_chosen)-CL0_to-(dCL_LE_rectangular_flap + dCL_LE_taper_flap + dCL_TE_rectangular_flap))*1/CL_alpha_to;
             if abs(AoA_new - AoA) < AoA_tolerance
+                AoA = AoA_new;
                 break
             end
             AoA = AoA_new;
@@ -841,6 +885,15 @@ for pitch_iterate = 1:pitch_iterate_limit % Loop to see if pitch is correct
         s_to_air= s_to_air+V*cos(gamma)*dt_to;
         time_to_air = time_to_air + dt_to;
         pitch = AoA + gamma - iw_chosen;
+
+        s_tracker(length(s_tracker)+1) = s_to_g + s_to_air;
+        t_tracker(length(t_tracker)+1) = time_to_g + time_to_air;
+        W_tracker(length(W_tracker)+1) = W;
+        E_battery_1_tracker(length(E_battery_1_tracker)+1) = E_battery_1;
+        E_battery_3_tracker(length(E_battery_3_tracker)+1) = E_battery_3;
+        h_tracker(length(h_tracker)+1) = h_to_air;
+
+
         if h_to_air > h_clearance_chosen
             break
         end
@@ -883,13 +936,20 @@ M1_calculated = M_end_to_air
 s_to_air_calculated = s_to_air
 s_to_calculated = s_to_g_calculated + s_to_air_calculated
 
+s_tracker_end_to_air= s_tracker;
+t_tracker_end_to_air = t_tracker;
+W_tracker_end_to_air = W_tracker;
+E_battery_1_tracker_end_to_air = E_battery_1_tracker;
+E_battery_3_tracker_end_to_air = E_battery_3_tracker;
+h_tracker_end_to_air = h_tracker;
+
 % Climb (using basic climb found in Raymer performance chapter, tried to adapt Toby's notes but it lead to nonsensical results)
 % Finding the best climb rate at different height blocks
 % CL0_climb = 0.1
 % CL_alpha_climb = 5.53859
 CL_alpha_climb = 5.723
 CL0_climb = 0.34-CL_alpha_climb*iw_chosen; % Updated value
-k_climb = 1.8;
+k_climb = 1.9;
 
 % Break up climb into blocks
 no_blocks = 4;
@@ -983,6 +1043,9 @@ for iBlock = 1:no_blocks % Looping over different segments of climb
 
     dh = height_discretization(2) - height_discretization(1);
     V = V_best(iBlock);
+    pitch_average_temp = [];
+    Vv_average_temp = [];
+    time_climb_segment_temp = 0;
     % Calculating the climb rate at the best speed for that given height
     for iHeight = 1:length(height_discretization)
         alpha_climb_block_recalc = double(subs(alpha_climb_chosen,h,height_discretization(iHeight)));
@@ -1027,17 +1090,33 @@ for iBlock = 1:no_blocks % Looping over different segments of climb
         %         gamma_block_recalc_array((iBlock-1)*length(height_discretization) + iHeight) = gamma_block;
         gamma_block_recalc_array((iBlock-1)*length(height_discretization) + iHeight) = gamma_block_recalc;
 
+
+        pitch_average_temp(iHeight) = gamma_block_recalc + AoA_block_recalc; 
+        Vv_average_temp(iHeight) = Vv;
+
         V_stall_block(iHeight) = (2*W/S_chosen/(rho*CL_max_climb_chosen))^(1/2);
         % Calculate progression of climb
         dt_climb = dh/Vv;
         time_climb = dt_climb + time_climb;
+        time_climb_segment_temp = time_climb_segment_temp + dt_climb;
         s_climb = s_climb + V*cos(gamma_block_recalc);
         fuel_mass_flow_rate_climb = alpha_climb_block*P0_ICE_chosen*cp_climb_chosen;
         W = W - fuel_mass_flow_rate_climb*g*dt_climb;
         E_total_battery = E_total_battery - P_elec_climb*dt_climb/n_e;
         E_battery_1 = E_battery_1 - P_elec_climb/2*dt_climb/n_e/2;
         E_battery_2 = E_battery_2 - P_elec_climb/2*dt_climb/n_e/2;
+
+        s_tracker(length(s_tracker)+1) = s_to_g + s_to_air + s_climb;
+        t_tracker(length(t_tracker)+1) = time_to_g + time_to_air + time_climb;
+        W_tracker(length(W_tracker)+1) = W;
+        E_battery_1_tracker(length(E_battery_1_tracker)+1) = E_battery_1;
+        E_battery_3_tracker(length(E_battery_3_tracker)+1) = E_battery_3;
+        h_tracker(length(h_tracker)+1) = h_to_air + height_discretization(iHeight);
+
     end
+    pitch_average(iBlock) = mean(pitch_average_temp);
+    Vv_average(iBlock) = mean(Vv_average_temp);
+    time_climb_segment(iBlock) = time_climb_segment_temp;
     V_stall_climb(iBlock) = mean(V_stall_block);
 end
 
@@ -1063,7 +1142,6 @@ if plot_angles_vs_height == true
     legend('Climb angle ($\gamma$)','AoA ($\alpha$)','Pitch ($\theta$)','interpreter','latex')
 end
 
-
 % Setting results after climb
 W_end_climb = W;
 
@@ -1080,6 +1158,13 @@ E_battery_3_end_climb = E_battery_3
 E_battery_4_end_climb = E_battery_4
 
 E_battery_used_climb =  E_total_battery_end_to_air - E_total_battery
+
+s_tracker_end_climb= s_tracker;
+t_tracker_end_climb = t_tracker;
+W_tracker_end_climb = W_tracker;
+E_battery_1_tracker_end_climb = E_battery_1_tracker;
+E_battery_3_tracker_end_climb = E_battery_3_tracker;
+h_tracker_end_climb = h_tracker;
 
 
 %% Detailed performance calculations (Cruise)
@@ -1109,7 +1194,7 @@ E_battery_4 = E_battery_4_chosen;
 P_available_ICE = P0_ICE_chosen*alpha_cruise_chosen
 % P_available_elec = 0.02*P0_ICE_chosen
 % Power available coming out of the motors
-P_available_elec = 167*2*1000
+P_available_elec = 162*2*1000
 % Power recharing going into the battery
 P_recharge = 148*2*1000 % W
 % Total power available
@@ -1175,7 +1260,13 @@ for iterate = 1:iterate_limit
     %     T = 1/2*rho_cruise_chosen*V_cruise_chosen^2*S_chosen*(CD0_cruise_chosen+K_cruise_chosen*CL^2);
     %     % Power required
     %     P_cruise = T*V_cruise_chosen/n_pr_cruise_chosen;
-
+    
+    % Calculation for compliance
+    mu = 2*W*0.224809/(S_chosen/(0.3048^2))/(rho_cruise_chosen*0.00194032*c_mac/0.3048*CL_alpha_cruise);
+    K_g = 0.88*mu/(5.3+mu);
+    U_ref = 56; %ft/s
+    VB(iterate) = V_stall_cruise_array(iterate)/0.3048/(sigma_cruise_chosen^(1/2))*(1+(K_g*U_ref*V_cruise_chosen*CL_alpha_cruise)/(498*(W*0.224809/(S_chosen/(0.3048^2)))))^(1/2);
+    VB(iterate) = (sigma_cruise_chosen^(1/2))*VB(iterate)*0.3048;
     L = W;
     CL = L/(1/2*rho_cruise_chosen*V_cruise_chosen^2*S_chosen);
     AoA_cruise = (CL-CL0_cruise)/CL_alpha_cruise;
@@ -1245,6 +1336,14 @@ for iterate = 1:iterate_limit
     s_cruise = s_cruise + dt_cruise*V_cruise_chosen;
     time_cruise = time_cruise + dt_cruise;
 
+    s_tracker(length(s_tracker)+1) = s_to_g + s_to_air + s_climb + s_cruise;
+    t_tracker(length(t_tracker)+1) = time_to_g + time_to_air + time_climb + time_cruise;
+    W_tracker(length(W_tracker)+1) = W;
+    E_battery_1_tracker(length(E_battery_1_tracker)+1) = E_battery_1;
+    E_battery_3_tracker(length(E_battery_3_tracker)+1) = E_battery_3;
+    h_tracker(length(h_tracker)+1) = h_tracker(length(h_tracker));
+
+
 %     if E_battery_1 < 0 && E_battery_2 < 0 && E_battery_3 < 0 && E_battery_4 < 0
 %         disp('Parameters lead to complete depletion of batteries')
 %         break
@@ -1257,6 +1356,7 @@ end
 
 % Setting results at end of cruise
 V_stall_cruise = mean(V_stall_cruise_array);
+VB_average = mean(VB);
 
 s_cruise_calculated = s_cruise;
 s_cruise_calculated = s_cruise/1000/1.852; % nm
@@ -1282,6 +1382,13 @@ E_battery_2_end_cruise = E_battery_2
 E_battery_3_end_cruise = E_battery_3
 E_battery_4_end_cruise = E_battery_4
 
+s_tracker_end_cruise= s_tracker;
+t_tracker_end_cruise = t_tracker;
+W_tracker_end_cruise = W_tracker;
+E_battery_1_tracker_end_cruise = E_battery_1_tracker;
+E_battery_3_tracker_end_cruise = E_battery_3_tracker;
+h_tracker_end_cruise = h_tracker;
+
 %% Detailed performance calculations (Descent, Approach and Landing)
 % Descent
 V_descent = V_cruise_chosen
@@ -1297,7 +1404,7 @@ Vv_descent = V_descent*sin(gamma_descent)
 h_descent = h_cruise_chosen
 s_descent = 0
 t_descent = 0
-dt_descent = 1
+dt_descent = 0.1
 iterate_limit = 3600/dt_descent
 
 E_total_battery_start_descent = E_total_battery_end_cruise;
@@ -1348,13 +1455,47 @@ for iterate = 1:iterate_limit
     t_descent = t_descent + dt_descent;
     h_descent = h_descent- dt_descent*Vv_descent;
     s_descent = s_descent + dt_descent*V_descent*cos(gamma_descent);
+
+    s_tracker(length(s_tracker)+1) = s_to_g + s_to_air + s_climb + s_cruise + s_descent;
+    t_tracker(length(t_tracker)+1) = time_to_g + time_to_air + time_climb + time_cruise + t_descent;
+    W_tracker(length(W_tracker)+1) = W;
+    E_battery_1_tracker(length(E_battery_1_tracker)+1) = E_battery_1;
+    E_battery_3_tracker(length(E_battery_3_tracker)+1) = E_battery_3;
+    h_tracker(length(h_tracker)+1) = h_descent;
     if h_descent < h_land
+        W_end_of_descent = W
+        W4_calculated = W_end_of_descent
+        Wf_used_descent = W4_calculated - W3_calculated % Increases with increasing gamma_descent
+
+        E_total_battery_end_descent = E_total_battery;
+        E_battery_1_end_descent = E_battery_1
+        E_battery_2_end_descent = E_battery_2
+        E_battery_3_end_descent = E_battery_3
+        E_battery_4_end_descent = E_battery_4
+    end
+
+    if h_descent < 0
         break
     end
+
 end
-W_end_of_descent = W
-W4_calculated = W_end_of_descent
-Wf_used_descent = W4_calculated - W3_calculated % Increases with increasing gamma_descent
+% W_end_of_descent = W
+% W4_calculated = W_end_of_descent
+% Wf_used_descent = W4_calculated - W3_calculated % Increases with increasing gamma_descent
+% 
+% E_total_battery_end_descent = E_total_battery;
+% E_battery_1_end_descent = E_battery_1
+% E_battery_2_end_descent = E_battery_2
+% E_battery_3_end_descent = E_battery_3
+% E_battery_4_end_descent = E_battery_4
+
+s_tracker_end_descent= s_tracker;
+t_tracker_end_descent = t_tracker;
+W_tracker_end_descent = W_tracker;
+E_battery_1_tracker_end_descent = E_battery_1_tracker;
+E_battery_3_tracker_end_descent = E_battery_3_tracker;
+h_tracker_end_descent = h_tracker;
+
 
 % Landing
 
@@ -1371,7 +1512,6 @@ s_land_air = h_land/tan(gamma_approach)
 s_land_g = 0
 CL_alpha_land = 5.723
 CL0_land = 0.34-CL_alpha_land*iw_chosen; % Updated value
-dCD_flaps_land = 0.01;
 k_td = 1.15
 V_td = k_td*V_stall_land
 V = V_td
@@ -1396,7 +1536,7 @@ for iterate = 1:iterate_limit
     % Accounting for angle of attack
     CL_clean = CL_alpha_land*AoA_land_g + CL0_land;
     CL = CL_clean + dCL_LE_rectangular_flap + dCL_LE_taper_flap + dCL_TE_rectangular_flap;
-    CD = CD0_to_chosen + K_IGE_land*CL_clean^2 + dCD_flaps_land;
+    CD = CD0_to_chosen + K_IGE_land*CL_clean^2 + dCD_flaps_land + dCD_landing_gear;
     L = 1/2*rho_SL*V^2*S_chosen*CL;
     D = 1/2*rho_SL*V^2*S_chosen*CD;
     N  = W-L;
@@ -1405,6 +1545,13 @@ for iterate = 1:iterate_limit
 
     s_land_g = s_land_g + V*dt_land_g;
     t_land_g = t_land_g + dt_land_g;
+
+    s_tracker(length(s_tracker)+1) = s_to_g + s_to_air + s_climb + s_cruise + s_descent + s_land_g;
+    t_tracker(length(t_tracker)+1) = time_to_g + time_to_air + time_climb + time_cruise + t_descent + t_land_g;
+    W_tracker(length(W_tracker)+1) = W;
+    E_battery_1_tracker(length(E_battery_1_tracker)+1) = E_battery_1;
+    E_battery_3_tracker(length(E_battery_3_tracker)+1) = E_battery_3;
+    h_tracker(length(h_tracker)+1) = h_tracker(length(h_tracker));
     if V < 0
         break
     end
@@ -1415,17 +1562,20 @@ s_land = s_land_g + s_land_air
 s_total = s_to_calculated + s_climb + s_cruise + s_descent + s_land
 s_total = s_total/1000/1.852
 
+Wf_used = Wf_used_descent + Wf_used_cruise + Wf_used_climb + Wf_used_to_g + Wf_used_to_air
+
 E_total_battery_end_descent = E_total_battery;
 E_battery_1_end_descent = E_battery_1;
 E_battery_2_end_descent = E_battery_2;
 E_battery_3_end_descent = E_battery_3;
 E_battery_4_end_descent = E_battery_4;
 
+% Plotting
 
 %% Service ceiling calculations
 % Service ceiling
 sigma_SC_chosen = sigma
-alpha_SC_chosen = 0.9*sigma^0.8
+alpha_SC_chosen = 0.7*sigma^0.8
 W_SC = W0_MTOW_chosen
 
 % If all engines running
@@ -1433,8 +1583,8 @@ W_SC = W0_MTOW_chosen
 % P_SC_elec = P0_elec_chosen
 
 % If all motors fail (maybe due to an electrical short)
-% P_SC_ICE = alpha_SC_chosen*P0_ICE_chosen
-% P_SC_elec = 0
+P_SC_ICE = alpha_SC_chosen*P0_ICE_chosen
+P_SC_elec = 0
 
 % If both ICE flame out
 % P_SC_ICE = 0
@@ -1462,7 +1612,12 @@ rho_OEI = double(subs(sigma,h,h_OEI));
 W_OEI = W1_calculated;
 bank_angle_OEI = 5; %deg
 bank_angle_OEI = bank_angle_OEI*pi/180;
-V_stall_OEI = (2*W_OEI/S_chosen/(rho_OEI*CL_max_climb_chosen))^(1/2);
+% CL_max_OEI_chosen = CL_max_to_chosen;
+% CL_max_OEI_chosen = 1.572;
+V_lof_OEI_chosen = k_lof_chosen*(2*W0_chosen/(rho_SL*CL_max_OEI_chosen*S_chosen))^(1/2)
+V2_OEI_chosen = k_2_chosen*(2*W0_chosen/(rho_SL*CL_max_OEI_chosen*S_chosen))^(1/2)
+
+V_stall_OEI = (2*W_OEI/S_chosen/(rho_OEI*CL_max_OEI_chosen))^(1/2);
 V_range  = linspace(V_stall_OEI,V_cruise_req,100);
 CD_blade = 0.1;
 
@@ -1472,11 +1627,24 @@ for iV = 1:length(V_range)
     V = V_range(iV);
     Fv = 1/2*rho_OEI*V^2*S_chosen*C_Y_beta_cruise*sideslip_sym;
     Fr = 1/2*rho_OEI*V^2*S_chosen*C_Y_delta_r_cruise*delta_r_max_deflection;
-    CL = CL0_climb + CL_alpha_climb*AoA_sym;
-    L = 1/2*rho_OEI*V^2*S_chosen*CL;
     dCD0_fuselage = (d_fuselage_chosen*l_fuselage_chosen/S_chosen)*(sin(sideslip_sym))^3;
     dCD0_prop = (S_blade/S_chosen)*CD_blade;
     dCD0_OEI = dCD0_fuselage + dCD0_prop;
+    CL_clean = CL0_climb + CL_alpha_climb*AoA_sym;
+
+    % For takeoff with landing gear out
+%     CL = CL_clean + dCL_LE_rectangular_flap + dCL_LE_taper_flap + dCL_TE_rectangular_flap;
+    CL = CL_clean + dCL_LE_rectangular_flap + dCL_LE_taper_flap;
+%     CL = CL_clean + dCL_LE_taper_flap + dCL_TE_rectangular_flap;
+%     CL = CL_clean;
+
+%     CD = K_to_chosen*CL_clean^2 + CD0_to_chosen + dCD0_OEI + dCD_flaps_to + dCD_landing_gear;
+    CD = K_to_chosen*CL_clean^2 + CD0_to_chosen + dCD0_OEI + dCD_flaps_to;
+
+%     CD = K_to_chosen*CL_clean^2 + CD0_to_chosen + dCD0_OEI;
+
+    L = 1/2*rho_OEI*V^2*S_chosen*CL;
+    D = 1/2*rho_OEI*V^2*S_chosen*CD;
     T = alpha_OEI*n_pr*P0_chosen/V/2;
     eq1 = 0 == Fr*cos(sideslip_sym)*cos(bank_angle_OEI)+Fv*cos(sideslip_sym)*cos(bank_angle_OEI)-L*cos(gamma_sym)*sin(bank_angle_OEI);
     eq2 = 0 == T*cos(sideslip_sym)*cos(AoA_sym - iw_chosen) - D - W*sin(gamma_sym)-(Fv+Fr)*sin(sideslip_sym)*cos(AoA_sym-iw_chosen);
@@ -1491,16 +1659,31 @@ for iV = 1:length(V_range)
 end
 Vv_OEI_array = V*sin(gamma_OEI_array);
 pitch_OEI_array = AoA_OEI_array + gamma_OEI_array;
+% domain_to_plot = sideslip_OEI_array*180/pi<10 & sideslip_OEI_array*180/pi>0 & Vv_OEI_array > 0;
+% domain_to_plot = V_range > V_lof_chosen & Vv_OEI_array > 0;
+domain_to_plot = V_range > V_lof_chosen & V_range < V2_OEI_chosen
 % Plotting
-figure
+OEI_figure = figure
 yyaxis left
-plot(V_range,sideslip_OEI_array*180/pi);
+plot(V_range(domain_to_plot),sideslip_OEI_array(domain_to_plot)*180/pi);
 hold on
-plot(V_range,pitch_OEI_array*180/pi);
+% plot(V_range(domain_to_plot),gamma_OEI_array(domain_to_plot)*180/pi);
+plot(V_range(domain_to_plot),tan(gamma_OEI_array(domain_to_plot))*100);
 ylim([0,Inf])
+ylabel('tan($\gamma$)(\%),$\beta$ (deg)')
 yyaxis right
-plot(V_range,Vv_OEI_array);
-legend('Sideslip','Pitch','Climb rate')
+plot(V_range(domain_to_plot),Vv_OEI_array(domain_to_plot));
+ylabel('$V_{V_{OEI}}$(m/s)')
+xlabel('$V_{\infty}$(m/s)')
+legend('Sideslip','Climb gradient','Climb rate','location','ne')
+
+% Save figure
+save_figure = false;
+if save_figure == true
+    figure_name = 'OEI performance';
+    save_folder = 'G:\My Drive\University Material\MAE 4410\Design Project\Figures';
+    print(OEI_figure,fullfile(save_folder,figure_name),'-dpng','-r240')
+end
 
 %% Payload range diagram
 harmonic_range_payload = M_payload_max; %kg
@@ -1516,6 +1699,25 @@ plot([0 harmonic_range,maximumm_range,ultimate_range],...
     [harmonic_range_payload, harmonic_range_payload, maximum_range_payload, ultimate_range_payload],'-*')
 ylabel('$M_{payload}$ (kg)')
 xlabel('Range (nm)')
+
+%% Fuel savings
+Wf_used_non_hybrid_per_flight = 2.6700e+04;
+Wf_used_hybrid_per_flight = 1.8949e+04;
+Wf_saved_per_flight = Wf_used_non_hybrid_per_flight - Wf_used_hybrid_per_flight;
+Mf_saved_per_flight = Wf_saved_per_flight/g
+
+CO2_emitted_per_kg = 3.16; %kg/kg
+
+CO2_emissions_saved_per_flight = Mf_saved_per_flight*CO2_emitted_per_kg;
+
+cycles_of_recharge_per_flight = 3;
+recharge_cycles_per_battery = 1000;
+
+CO2_emissions_saved_per_battery_set = CO2_emissions_saved_per_flight*recharge_cycles_per_battery/cycles_of_recharge_per_flight;
+CO2_emissions_saved_per_battery = CO2_emissions_saved_per_battery_set/no_batteries/1000
+
+
+
 
 
 
